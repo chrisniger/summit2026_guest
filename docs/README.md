@@ -18,6 +18,10 @@ The **Info Com** registration and session attendance domain and **Guest Service 
 
 ## Contents
 
+- `PHASE_5_COMPLETION_REPORT.md` — current local release scope, verification and limits; supersedes older phase status statements.
+- `LOCAL_OPERATIONS_RUNBOOK.md` — safe Windows startup, monitoring, encrypted backup/rehearsal and import recovery/retention.
+- Root `handoff.md` — complete current AI/developer handoff, followed by historical snapshots.
+
 - `01_PRODUCT_REQUIREMENTS.md` — scope, roles, functional requirements, definitions.
 - `02_WORKFLOWS.md` — both independent business processes and Mermaid diagrams.
 - `03_ROLES_PERMISSIONS.md` — explicit permissions and server enforcement.
@@ -37,4 +41,4 @@ The **Info Com** registration and session attendance domain and **Guest Service 
 
 **Data handling:** Uploaded live attendee/guest files contain personal data and are intentionally not included inside this developer handoff ZIP. Supply them through authorized secure test/import channels if needed. Example templates contain no real personal details.
 
-**Configuration still required:** actual start/end times for eight sessions, guest form required-field policy, whether virtual registrations auto-check-in, staff account/permissions setup, and any approved backdated attendance policy. Defaults and safe behavior are described in the relevant sections.
+**Current status:** Phases 1–5 delivered for local internal use. Production hosting is deferred by the owner. **Configuration still required:** verified times/enablement for eight sessions, real staff/permissions, approved retention/correction policy and historical source mapping. Current safe defaults remain: virtual registrations do not auto-mark physical presence; guest capture requires actual encounter session/name/phone; Data Entry sees its own entries. Defaults and safe behavior are described in the relevant sections.

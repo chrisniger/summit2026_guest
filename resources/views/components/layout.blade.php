@@ -41,11 +41,25 @@
             @can('workspace.officer')
                 <a href="{{ route('my-guests') }}" @class(['nav-link', 'active' => request()->routeIs('my-guests')])><x-icon name="heart" /> My assigned guests</a>
             @endcan
+            @can('guest.access')
+                <p class="nav-caption">GUEST SERVICE OPERATIONS</p>
+                <a href="{{ route('guests.index') }}" @class(['nav-link', 'active' => request()->routeIs('guests.index', 'guests.show')])><x-icon name="people" /> Guest records</a>
+                @can('create', \App\Models\GuestRecord::class)
+                    <a href="{{ route('guests.create') }}" @class(['nav-link', 'active' => request()->routeIs('guests.create', 'guests.edit')])><x-icon name="edit" /> Enter guest</a>
+                @endcan
+                @can('guest.import')
+                    <a href="{{ route('guest-imports.index') }}" @class(['nav-link', 'active' => request()->routeIs('guest-imports.*')])><x-icon name="edit" /> Guest CSV / XLSX imports</a>
+                @endcan
+            @endcan
+            @can('follow-up.reports')
+                <a href="{{ route('follow-up.reports') }}" @class(['nav-link', 'active' => request()->routeIs('follow-up.reports*')])><x-icon name="grid" /> Follow-up reports</a>
+            @endcan
             @can('platform.manage')
                 <p class="nav-caption">ADMINISTRATION</p>
                 <a href="{{ route('admin.sessions') }}" @class(['nav-link', 'active' => request()->routeIs('admin.sessions')])><x-icon name="calendar" /> Conference sessions</a>
                 <a href="{{ route('admin.staff') }}" @class(['nav-link', 'active' => request()->routeIs('admin.staff*')])><x-icon name="people" /> Staff & roles</a>
                 <a href="{{ route('admin.audit') }}" @class(['nav-link', 'active' => request()->routeIs('admin.audit')])><x-icon name="shield" /> Audit trail</a>
+                <a href="{{ route('admin.operations') }}" @class(['nav-link', 'active' => request()->routeIs('admin.operations')])><x-icon name="shield" /> Local operations</a>
             @endcan
         </nav>
         <div class="sidebar-footer"><span class="dot"></span> 27 OCT — 01 NOV 2026<br><small>Africa/Lagos · WAT</small></div>
@@ -62,7 +76,8 @@
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="icon-button" aria-label="Sign out" title="Sign out"><x-icon name="logout" /></button></form>
             </div>
         </header>
-        <main id="main" class="page-content">
+        <main id="main" class="page-content" tabindex="-1">
+            <div id="connection-status" class="notice error" role="alert" tabindex="-1" hidden>Connection lost. Your entered values are still here. Reconnect before saving.</div>
             @if(session('status'))<div class="notice success" role="status">{{ session('status') }}</div>@endif
             @if(isset($errors) && $errors->any())<div class="notice error" role="alert"><strong>Please review the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             {{ $slot }}

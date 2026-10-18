@@ -1,5 +1,30 @@
 # 08 — Controller / API contracts (implementation guide)
 
+## Actual Phase 4 routes and semantics
+
+- POST /follow-up/assignments/preview: guest_ids[] (1–200 distinct IDs), action assign/reassign/unassign, officer_user_id except unassign, reason (5–1000 chars). Renders exact selection; no assignment writes.
+- POST /follow-up/assignments/commit: token from preview and confirm=1. Actor-bound encrypted 15-minute snapshot; all-or-nothing versions/current-owner validation. Stale selections return 409.
+- POST /follow-up/guests/{guest}/activities: submission_id UUID, version, expected assignment_id or null, method, outcome, attempted_at (Y-m-dTH:i WAT), required comment, two_way_confirmed for CONTACTED / failed_attempt_confirmed for UNREACHABLE. Server derives actor/guest/status/provenance.
+- GET /follow-up/reports: shared guest cohort filters plus WAT activity date/actor filters.
+- GET /follow-up/reports/export: same filters and type guests/assignments/status/officers/activities; audited safe CSV.
+
+Assignment requires guest.assign and authorized guest scope. Contact requires current authorization/assignment under locks. Reports require the follow-up.reports Gate, permitting guest.report.view managers and own-scope officers. Officers never access other officers' private historical activity through these endpoints. See PHASE_4_COMPLETION_REPORT.md for complete outcome/chronology/retry contracts.
+
+## Actual Phase 3 browser routes
+
+These server-rendered routes use the existing guest.* permissions:
+
+- GET /follow-up/guests — scoped, paginated filters (search, year, session, day, status, assignment, archive).
+- GET /follow-up/guests/create; POST /follow-up/guests — GuestRequest fields, submission_id UUID, optional keep_separate and add_another.
+- GET /follow-up/guests/{guest}; GET .../{guest}/edit; PATCH .../{guest} — per-record policy, version required on edits.
+- GET/POST /follow-up/imports; GET /follow-up/imports/template — explicit guest.import and guest.create.
+- GET /follow-up/imports/{batch}; POST .../{batch}/preview — sheets[], session_map[descriptor_hash], source_timezone.
+- POST .../{batch}/rows/{row} — decision new/match/skip, optional guest_id for same-session existing encounter.
+- POST .../{batch}/commit — confirm=1 required; GET .../{batch}/results — authorized safe CSV.
+- POST /follow-up/imports/historical-session — Super Admin only: year, date, day_number, name.
+
+No assignment/contact API was introduced in Phase 3. Non-Super Admin users can access only their own import batches. Full route names are available through artisan route:list.
+
 Laravel monolith with server-rendered Livewire screens is preferred. These endpoints are illustrative JSON contracts for Livewire actions/controllers and must be authenticated, CSRF-protected for browser writes, validated, authorized, audited, and rate-limited.
 
 ## Info Com routes

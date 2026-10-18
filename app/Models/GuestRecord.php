@@ -19,7 +19,7 @@ class GuestRecord extends Model
 
     protected function casts(): array
     {
-        return ['captured_at_original_utc' => 'datetime', 'raw_source_json' => 'array', 'archived_at' => 'datetime'];
+        return ['captured_at_original_utc' => 'datetime', 'raw_source_json' => 'array', 'archived_at' => 'datetime', 'version' => 'integer'];
     }
 
     public function session(): BelongsTo

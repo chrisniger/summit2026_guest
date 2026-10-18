@@ -1,5 +1,15 @@
 # 04 — Database design
 
+## Phase 4 additive schema and services
+
+Migration 2026_10_18_193725_extend_follow_up_operations adds nullable unique source_fingerprint and (guest_record_id, attempted_at_utc) index to follow_up_activities, plus nullable closure_reason to follow_up_assignments. The original assignment reason/assigning actor remain preserved when ownership ends. Transactional services now implement assignment/closure, actual attempts, current status/history and audit. Guest version increments invalidate stale profile/assignment/contact forms.
+
+## Phase 3 additive schema
+
+Migration 2026_10_18_191352_extend_guest_capture_and_imports adds nullable unique source_fingerprint and integer version (default 1) to guest_records. Guest import batches add private_path, rows_review, rows_processed, rows_skipped and failure_message. guest_import_rows replaces (batch_id, row_number) uniqueness with (batch_id, worksheet_name, row_number), allowing the same physical row number in different worksheets.
+
+Guest create/edit/import controllers, services, models and the chunk job now implement these tables. No new attendee/guest cross-reference exists. Assignment/contact tables remain Phase 4 foundations.
+
 Updated 18 October 2026 from prompts 1–3. The implemented Phase 1 migrations are authoritative for physical column types. All instants are UTC; local conference dates and times are Africa/Lagos.
 
 ## Shared identity and conference configuration

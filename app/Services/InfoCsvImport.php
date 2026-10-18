@@ -134,7 +134,9 @@ class InfoCsvImport
             throw ValidationException::withMessages(['file' => 'The CSV has no data rows.']);
         }
         $path = 'info-imports/'.Str::uuid().'.csv.enc';
-        Storage::disk('local')->put($path, Crypt::encryptString($content));
+        if (! Storage::disk('local')->put($path, Crypt::encryptString($content))) {
+            throw ValidationException::withMessages(['file' => 'The private original could not be saved. Check storage and retry. No import was created.']);
+        }
         try {
             return DB::transaction(function () use ($actor, $file, $content, $path, $rows) {
                 $batch = InfoImportBatch::create(['conference_event_id' => ConferenceEvent::where('year', 2026)->firstOrFail()->id,

@@ -1,5 +1,13 @@
 # 09 — Analytics and report definitions
 
+## Phase 4 implemented reporting contract
+
+The working /follow-up/reports UI and five CSV exports use FollowUpReports. Current guest/status/assignment counts describe the filtered current cohort; activity dates do not reconstruct historical state. Historical-as-of reports are not implemented.
+
+Actor performance retains activity credit after reassignment within this same cohort/period; current workload counts active assignment rows only. Untouched means no non-NOTE_ONLY attempt by the current owner under the current assignment in the selected activity period. Officer personal views expose only their own current-assignment activity; manager histories retain all permitted actors. Consequently personal activity success can differ from a guest's current status inherited from a previous owner.
+
+Success = distinct actual CONTACTED guests / distinct guests with actual non-NOTE_ONLY attempts in the same scope/period. A guest with multiple attempts contributes once to each distinct denominator/numerator. Counts across different officers may overlap and are labelled. Method breakdown includes all notes/attempts. Inactive officers retain manager-visible workload/history and cannot receive new assignments.
+
 ## Info Com dashboard — independent
 - `registered` = count of Info Com attendee profiles satisfying date/filter criteria.
 - `session_present` = distinct attendee IDs with present record for specified session.

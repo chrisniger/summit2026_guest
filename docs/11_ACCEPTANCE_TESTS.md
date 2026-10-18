@@ -1,5 +1,11 @@
 # 11 — Acceptance and QA scenarios
 
+## Current local verification
+
+Phase 5 release passed165 automated tests / 1007 assertions and30 real Chrome/concurrency scenario groups. All use guarded summit_2026_test, run sequentially, and preserve the main database. Phase 3/4 tests cover guest capture, XLSX safety, scoped authorization, assignment/contact concurrency and reconciled exports; Phase 5 adds response privacy, upload failure, queue/recovery/pruning boundaries, locks and restore guards. Synthetic volume: 1,749 Info Com + 1,000 Guest Service rows, 16 simultaneous check-ins, 200 allocations, 8 duplicate contact attempts; 21-table restore plus 2 original decryptions. Chrome checks cover 320/360/768/1440px, keyboard/labels/reduced motion and offline reconnect/save once.
+
+See PHASE_5_COMPLETION_REPORT.md for evidence. Physical mobile devices, actual local network, real staff/session setup and future production hosting require separate acceptance; viewport emulation is not physical-device certification. The table below remains the behavioral contract, not a claim that external production prerequisites have been supplied.
+
 The development agent must implement automated feature tests plus mobile manual smoke tests. All rows should pass before go-live.
 
 | ID | Test | Expected result |

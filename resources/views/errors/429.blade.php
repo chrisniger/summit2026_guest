@@ -1,0 +1,1 @@
+@include('errors.recovery', ['code' => 429, 'heading' => 'Please wait before trying again', 'detail' => 'Too many requests were sent. Wait a minute, then reopen your workspace. Repeated saves use the same submission identity to avoid duplicate records.'])

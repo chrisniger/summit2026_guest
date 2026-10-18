@@ -22,4 +22,9 @@ class FollowUpStatusHistory extends Model
     {
         return $this->belongsTo(GuestRecord::class, 'guest_record_id');
     }
+
+    public function activity(): BelongsTo
+    {
+        return $this->belongsTo(FollowUpActivity::class, 'activity_id');
+    }
 }

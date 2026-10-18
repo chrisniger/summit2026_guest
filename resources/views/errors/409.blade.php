@@ -1,0 +1,1 @@
+@include('errors.recovery', ['code' => 409, 'heading' => 'This record changed', 'detail' => 'Another action changed this record or its assignment. Return to your workspace, reopen the record, and review the latest values before trying again.'])

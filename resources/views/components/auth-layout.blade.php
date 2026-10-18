@@ -21,6 +21,7 @@
             @if(session('status'))<div class="notice success" role="status">{{ session('status') }}</div>@endif
             @if($errors->any())<div class="notice error" role="alert" id="form-errors"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             {{ $slot }}
+            <div id="connection-status" class="notice error" role="alert" tabindex="-1" hidden>Connection lost. Your entered values are still here. Reconnect before saving.</div>
             <div class="auth-security"><x-icon name="shield" /><span>Authorized staff access only.<br>Need access? Contact your Super Admin.</span></div>
         </div>
         <footer class="auth-footer">SUMMIT 2026 · Summit Bible Church</footer>

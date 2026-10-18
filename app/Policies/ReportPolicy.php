@@ -13,6 +13,7 @@ class ReportPolicy
 
     public function followUp(User $user): bool
     {
-        return $user->hasPermission('guest.report.view');
+        return $user->hasPermission('guest.access') && ($user->hasPermission('guest.report.view')
+            || ($user->hasRole('officer') && $user->hasPermission('guest.contact')));
     }
 }

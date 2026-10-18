@@ -1,0 +1,1 @@
+@include('errors.recovery', ['code' => 500, 'heading' => 'The app could not complete this request', 'detail' => 'Contact your administrator and reopen your workspace to check whether the action completed before retrying.'])

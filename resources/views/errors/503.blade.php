@@ -1,0 +1,1 @@
+@include('errors.recovery', ['code' => 503, 'heading' => 'Brief maintenance in progress', 'detail' => 'The local operator is performing maintenance or a backup. Wait a moment, then return to your workspace.'])

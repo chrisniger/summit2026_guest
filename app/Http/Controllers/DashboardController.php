@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ConferenceSession;
 use App\Models\GuestRecord;
 use App\Models\InfoAttendanceRecord;
+use App\Services\FollowUpReports;
 use App\Services\InfoReports;
 use App\Services\SessionSchedule;
 use Illuminate\Http\Request;
@@ -42,6 +43,17 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('dashboard', compact('workspace', 'sessions', 'info', 'guests') + ['currentSession' => $schedule->activeAt(now())]);
+        $followUp = null;
+        $assignedGuests = collect();
+        if ($request->user()->can('follow-up.reports')) {
+            $filters = $workspace === 'my-guests' ? ['officer' => $request->user()->id] : [];
+            $reports = app(FollowUpReports::class);
+            $followUp = $reports->summary($request->user(), $filters);
+            if ($workspace === 'my-guests') {
+                $assignedGuests = $reports->base($request->user(), $filters)->with('session')->orderBy('id')->limit(10)->get();
+            }
+        }
+
+        return view('dashboard', compact('workspace', 'sessions', 'info', 'guests', 'followUp', 'assignedGuests') + ['currentSession' => $schedule->activeAt(now())]);
     }
 }

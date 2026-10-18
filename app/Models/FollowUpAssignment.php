@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FollowUpAssignment extends Model
 {
-    protected $fillable = ['guest_record_id', 'officer_user_id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at', 'reason'];
+    protected $fillable = ['guest_record_id', 'officer_user_id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at', 'reason', 'closure_reason'];
 
     protected function casts(): array
     {

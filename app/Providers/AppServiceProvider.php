@@ -11,9 +11,13 @@ use App\Policies\AttendancePolicy;
 use App\Policies\FollowUpAssignmentPolicy;
 use App\Policies\GuestRecordPolicy;
 use App\Policies\InfoAttendeePolicy;
+use App\Policies\ReportPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\Looping;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -25,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Password::defaults(fn () => Password::min(8));
+        Queue::looping(function (Looping $event): void {
+            static $nextHeartbeat = 0;
+            if (in_array('imports', explode(',', $event->queue ?? ''), true) && time() >= $nextHeartbeat) {
+                Cache::put('summit:imports-worker', now()->timestamp, 300);
+                $nextHeartbeat = time() + 30;
+            }
+        });
         Gate::before(function (User $user): ?bool {
             if (! $user->is_active) {
                 return false;
@@ -39,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(InfoAttendanceRecord::class, AttendancePolicy::class);
         Gate::policy(GuestRecord::class, GuestRecordPolicy::class);
         Gate::policy(FollowUpAssignment::class, FollowUpAssignmentPolicy::class);
+        Gate::define('follow-up.reports', fn (User $user): bool => app(ReportPolicy::class)->followUp($user));
         foreach (config('summit.roles') as $role => $label) {
             Gate::define('workspace.'.$role, fn (User $user): bool => $user->hasRole($role));
         }

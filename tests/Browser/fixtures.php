@@ -3,6 +3,10 @@
 use App\Models\AuditLog;
 use App\Models\ConferenceEvent;
 use App\Models\ConferenceSession;
+use App\Models\FollowUpAssignment;
+use App\Models\GuestImportBatch;
+use App\Models\GuestImportRow;
+use App\Models\GuestRecord;
 use App\Models\InfoAttendanceRecord;
 use App\Models\InfoAttendee;
 use App\Models\InfoImportBatch;
@@ -10,6 +14,7 @@ use App\Models\InfoImportRow;
 use App\Models\InfoRegistrationEvent;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\GuestCapture;
 use App\Services\InfoAttendance;
 use App\Services\PhoneNumber;
 use Illuminate\Contracts\Console\Kernel;
@@ -47,10 +52,33 @@ if ($action === 'setup') {
                 'registration_original_at_utc' => now()->subMinutes(5), 'registration_source' => 'onsite']);
         }
     }
+    if (getenv('SUMMIT_BROWSER_PHASE3') === '1') {
+        $admin = User::where('email', $prefix.'_super_admin@example.test')->firstOrFail();
+        foreach (['Private', 'Assigned'] as $name) {
+            $guest = GuestRecord::create(['full_name' => $name.' '.$prefix, 'phone_raw' => '08055555555',
+                'phone_normalized' => '+2348055555555', 'created_by_user_id' => $admin->id,
+                'conference_session_id' => ConferenceSession::currentConference()->firstOrFail()->id]);
+            if ($name === 'Assigned') {
+                FollowUpAssignment::create(['guest_record_id' => $guest->id,
+                    'officer_user_id' => User::where('email', $prefix.'_officer@example.test')->firstOrFail()->id,
+                    'assigned_by_user_id' => $admin->id, 'assigned_at' => now()]);
+            }
+        }
+    }
     echo 'Test-only fixtures ready.';
 } elseif ($action === 'cleanup') {
     $users = User::where('email', 'like', $prefix.'_%@example.test')->get();
     $ids = $users->pluck('id');
+    $guestIds = GuestRecord::whereIn('created_by_user_id', $ids)->pluck('id');
+    $guestBatches = GuestImportBatch::whereIn('uploaded_by_user_id', $ids)->get();
+    GuestImportRow::whereIn('batch_id', $guestBatches->pluck('id'))->update(['guest_record_id' => null]);
+    FollowUpAssignment::whereIn('guest_record_id', $guestIds)->delete();
+    GuestRecord::whereIn('id', $guestIds)->delete();
+    GuestImportRow::whereIn('batch_id', $guestBatches->pluck('id'))->delete();
+    foreach ($guestBatches as $batch) {
+        Storage::disk('local')->delete($batch->private_path);
+        $batch->delete();
+    }
     $attendees = InfoAttendee::whereIn('created_by_user_id', $ids)->pluck('id');
     InfoAttendanceRecord::whereIn('info_attendee_id', $attendees)->delete();
     InfoRegistrationEvent::whereIn('info_attendee_id', $attendees)->delete();
@@ -68,6 +96,12 @@ if ($action === 'setup') {
         $user->delete();
     }
     echo 'Test-only staff fixtures removed.';
+} elseif ($action === 'race-guest') {
+    $actor = User::where('email', $prefix.'_data_entry@example.test')->firstOrFail();
+    $guest = app(GuestCapture::class)->create($actor, ['full_name' => 'Race Guest '.$prefix,
+        'phone_raw' => '08087654329', 'conference_session_id' => ConferenceSession::currentConference()->firstOrFail()->id],
+        getenv('SUMMIT_BROWSER_SUBMISSION'));
+    echo json_encode(['guest_id' => $guest->id]);
 } elseif ($action === 'race') {
     $actor = User::where('email', $prefix.'_info_com@example.test')->firstOrFail();
     $attendee = InfoAttendee::where('first_name', 'Race')->where('last_name', $prefix)->firstOrFail();

@@ -1,5 +1,13 @@
 # 06 — File import specification and mapping
 
+## Phase 3 implemented Guest Service pipeline
+
+Guest CSV and historical XLSX now have an independent /follow-up/imports interface. See PHASE_3_COMPLETION_REPORT.md for the exact implemented contract. Upload inspection, worksheet selection, header aliases, explicit encounter mapping, timezone confirmation, dry-run review, confirmed queued chunks, retries and row-result exports are delivered.
+
+The CSV template uses Event Date, Event Session, Full Name, Phone, Gender, Home Address, Heard About, Comment. Dates must resolve to the selected session. XLSX targets explicitly configured 2025 sessions; its legacy status/officer text is reviewed and preserved, while newly imported guests remain NOT CONTACTED and unassigned. Existing-encounter decisions keep the trusted profile/status and attach source provenance, rather than performing arbitrary profile updates.
+
+5 MB uploaded / 30 MB expanded; up to 10,000 data rows, 50 sheets, 100 columns and 200 descriptor mapping groups. Literal OOXML only; no XLS/XLSM, encrypted workbooks, macros, evaluated formulas or 1904-date system. Ambiguous timestamp text is quarantined. The actual personal-data 2025 workbook is not included and still requires an approved sample acceptance check.
+
 ## Phase 2 Info Com implementation
 
 The CSV UI implements dry-run preview, header-name mapping for all 18 fields, required duplicate review, explicit confirmation, 100-row transactional database-queue jobs, progress, safe retry and per-row result export. UTF-8 (including BOM), 5 MB, 10,000 non-empty rows. Header order is flexible. Source timestamps require an explicit offset, a valid 2026 date and no future instant. Blank optional booleans stay null; unknown values are invalid. Raw originals are encrypted on the private local disk; raw rows are never executed or logged.

@@ -2,12 +2,17 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\FollowUpReportController;
+use App\Http\Controllers\GuestController;
+use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\InfoAttendanceController;
 use App\Http\Controllers\InfoAttendeeController;
 use App\Http\Controllers\InfoImportController;
 use App\Http\Controllers\InfoReportController;
 use App\Http\Controllers\StaffController;
 use App\Models\AuditLog;
+use App\Services\Operations;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -48,6 +53,30 @@ Route::middleware('auth')->group(function () {
     Route::get('/follow-up', [DashboardController::class, 'show'])->middleware('can:workspace.follow_up_admin')->name('follow-up');
     Route::get('/guest-service', [DashboardController::class, 'show'])->middleware('can:workspace.data_entry')->name('guest-entry');
     Route::get('/my-guests', [DashboardController::class, 'show'])->middleware('can:workspace.officer')->name('my-guests');
+    Route::middleware('can:guest.access')->prefix('follow-up')->group(function () {
+        Route::post('/assignments/preview', [FollowUpController::class, 'preview'])->middleware('can:guest.assign')->name('follow-up.assignments.preview');
+        Route::post('/assignments/commit', [FollowUpController::class, 'commit'])->middleware('can:guest.assign')->name('follow-up.assignments.commit');
+        Route::get('/reports', [FollowUpReportController::class, 'index'])->middleware('can:follow-up.reports')->name('follow-up.reports');
+        Route::get('/reports/export', [FollowUpReportController::class, 'export'])->middleware('can:follow-up.reports')->name('follow-up.reports.export');
+        Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create');
+        Route::post('/guests', [GuestController::class, 'store'])->middleware('throttle:120,1')->name('guests.store');
+        Route::get('/guests/{guest}', [GuestController::class, 'show'])->name('guests.show');
+        Route::post('/guests/{guest}/activities', [FollowUpController::class, 'activity'])->middleware('throttle:60,1')->name('follow-up.activities.store');
+        Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])->name('guests.edit');
+        Route::patch('/guests/{guest}', [GuestController::class, 'update'])->middleware('throttle:120,1')->name('guests.update');
+        Route::middleware('can:guest.import')->prefix('imports')->name('guest-imports.')->group(function () {
+            Route::get('/', [GuestImportController::class, 'index'])->name('index');
+            Route::post('/', [GuestImportController::class, 'store'])->middleware('throttle:10,1')->name('store');
+            Route::get('/template', [GuestImportController::class, 'template'])->name('template');
+            Route::post('/historical-session', [GuestImportController::class, 'historicalSession'])->middleware('can:platform.manage')->name('historical-session');
+            Route::get('/{batch}', [GuestImportController::class, 'show'])->name('show');
+            Route::post('/{batch}/preview', [GuestImportController::class, 'preview'])->name('preview');
+            Route::post('/{batch}/rows/{row}', [GuestImportController::class, 'resolve'])->name('resolve');
+            Route::post('/{batch}/commit', [GuestImportController::class, 'commit'])->name('commit');
+            Route::get('/{batch}/results', [GuestImportController::class, 'results'])->name('results');
+        });
+    });
     Route::get('/access-denied', fn () => response()->view('errors.403', [], 403))->name('access-denied');
     Route::middleware('can:platform.manage')->prefix('admin')->name('admin.')->group(function () {
         Route::view('/sessions', 'admin.sessions')->name('sessions');
@@ -55,5 +84,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
         Route::patch('/staff/{user}', [StaffController::class, 'update'])->name('staff.update');
         Route::get('/audit', fn () => view('admin.audit', ['logs' => AuditLog::orderByDesc('id')->paginate(30)]))->name('audit');
+        Route::get('/operations', fn () => view('admin.operations', ['checks' => app(Operations::class)->checks()]))->name('operations');
     });
 });

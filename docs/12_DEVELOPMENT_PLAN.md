@@ -1,29 +1,32 @@
 # 12 — Implementation plan and decisions
 
-## Phase 1 — Core and isolation
+## Phase 1 — Core and isolation (delivered)
 - Laravel monolith skeleton, auth, Super Admin bootstrap, roles/permissions.
 - Separate Info Com and Guest Service models/tables/routes/policies.
 - Seed exactly eight sessions (times remain configuration-required, no guessed defaults).
 - Automated cross-domain separation tests B01–B08.
 
-## Phase 2 — Info Com
+## Phase 2 — Info Com (delivered)
 - Attendee form and phone normalization/search.
 - Session configuration/validation, manual/automatic check-ins, concurrency uniqueness.
 - 2026 CSV preview/commit/retry, WAT parsing, audit.
 - Session/day/conference analytics, export and mobile workflow.
 
-## Phase 3 — Guest Service capture
+## Phase 3 — Guest Service capture (delivered)
 - Guest entry form, explicit event/session selection, unassigned queue.
 - Legacy 2025 XLSX import and independent source mapping.
 - Field validation, duplicate candidate review, no cross-domain matching.
 
-## Phase 4 — Follow-Up operations
+## Phase 4 — Follow-Up operations (delivered)
 - Bulk assignment, reassignments, ownership-scoped officer dashboard.
 - Activity logging/status history, call workflow, reports and exports.
 - Officer performance and Follow-Up Admin controls.
 
-## Phase 5 — Stabilization and release
-- High concurrency tests, unauthorized access tests, responsive testing, backup/restore rehearsal, import smoke tests, lock times, audit review, production deployment and monitoring.
+## Phase 5 — Stabilization and local release (delivered)
+- High concurrency and scoped authorization checks, responsive Chrome checks, encrypted backup/isolated restore, volume imports/recovery, attendance lock controls and audit coverage.
+- Local server/worker/scheduler startup, Operations/doctor, heartbeat monitoring, private response/error handling and guarded manual import retention.
+- Owner chose local internal operation. Production deployment is deferred; host/domain, maintained database, HTTPS, least privilege, mail, supervised processes and scheduled/off-device backups require a later production work package.
+- See PHASE_5_COMPLETION_REPORT.md and LOCAL_OPERATIONS_RUNBOOK.md. Real session times/staff, approved retention and physical-device/network rehearsal remain owner setup.
 
 ## Definitions of done
 - All required use cases work on staging with representative redacted samples.

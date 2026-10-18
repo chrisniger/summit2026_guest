@@ -1,5 +1,31 @@
 # Implementation progress — 18 October 2026
 
+## Phase 5 — local internal release delivered
+
+The owner selected local operation first. Phases 1–5 are implemented within that scope; production hosting is deferred. Phase 5 adds private no-store/error responses, offline/double-submit protection, audited attendance locks, hardened queue/storage failure handling, Operations/doctor with worker and scheduler heartbeats, guarded dry-run-first import maintenance, hidden local startup and encrypted backup/isolated restore verification. No dependency or schema change was required.
+
+Verification: 165 tests / 1007 assertions; 30 real Chrome/concurrency groups across all four sequential browser suites. Release volume used 1,749 independent Info Com and1,000 Guest Service imports,16 simultaneous check-ins, 200 assignments and 8 simultaneous contact retries. Backup rehearsal matched21 tables and 2 synthetic encrypted originals; actual-app restore rehearsal preserved staff identity/password hashes. Build, Blade, formatting, strict Composer validation and dependency audits pass. Main data/key/account remain preserved. See PHASE_5_COMPLETION_REPORT.md and LOCAL_OPERATIONS_RUNBOOK.md for commands, 32 MiB local snapshot limit, device-test limits and owner configuration. Older next-phase and uncommitted statements below are historical snapshots.
+
+## Phase 4 — Follow-Up operations delivered
+
+Implemented reviewed bulk assignment/reassignment/unassignment, atomic stale-selection checks, preserved ownership history, current-assignment officer dashboard, confirmed contact outcomes, immutable activity/status histories, actor-scoped UUID retries, and version checks. Earlier dated attempts stay in history without replacing a later outcome; notes do not change status. Reassignment revokes former access, and officers see only their own activity under their current assignment.
+
+Follow-up reports/exports now reconcile current guest/status/ownership counts, distinct attempted/successful guests, actual attempts, notes, current workload, untouched assignments, actor performance, method/session breakdowns, roster and timeline. Filters retain independent Guest Service cohorts, explicit encounter years/sessions and WAT activity dates. Five formula-safe CSV exports use the same authorized scope; officers have personal reports only.
+
+The additive 2026_10_18_193725_extend_follow_up_operations migration is applied. Existing administrator credentials, APP_KEY, all data counts and eight sessions were preserved. No guest/officer sample records were created in the application database.
+
+Verification: 154 tests passed / 936 assertions on summit_2026_test, plus seven Phase 4 and sixteen prior-phase real Chrome/concurrency groups (23 total). Checks include simultaneous duplicate contacts, competing assignment confirmations, contact racing reassignment, mobile/desktop review, status history, private-note isolation, exports and unassignment. Pint dirty, Vite build, Blade compilation, strict Composer validation and migration status passed. See PHASE_4_COMPLETION_REPORT.md. Phase 5 stabilization/release is next. Older phase sections below describe historical snapshots.
+
+## Phase 3 — Guest Service delivered
+
+Guest capture and session-retaining batch entry, own-scope guest search/detail/edit, guest-only duplicate review, actor-scoped UUID retry, optimistic edit versions, independent guest CSV and historical 2025 XLSX imports are implemented. Upload inspection includes worksheet selection, explicit actual-session mapping and source timezone review; preview does not write guests. Explicit commit runs 100-row database-queue chunks with progress, rollback/retry and safe row-result exports. Legacy officer/status/comment metadata is preserved without creating assignments, accounts or successful contact activity.
+
+The additive guest capture/import migration is applied to summit_2026. Existing administrator credentials, APP_KEY, users, data counts and all eight 2026 sessions were preserved. Historical sessions can be configured explicitly by Super Admin without guessed clock times. Data Entry remains own-entry scoped; import permission is explicit and non-Super Admin batches are owner scoped.
+
+Verification: 125 PHPUnit tests passed / 730 assertions on summit_2026_test, plus five Phase 3 and eleven Phase 1–2 real Chrome/concurrency scenario groups, including two simultaneous PHP captures producing one guest and a real 101-row queued CSV import. Desktop/mobile screenshots, Pint dirty, Blade compilation, Vite build, strict Composer validation and migration status passed. Synthetic browser fixtures were removed. The installed PHP ZIP/DOM extensions provide a bounded literal XLSX reader; no package/dependency change was needed.
+
+See PHASE_3_COMPLETION_REPORT.md for file inventory, import limits, replay identity, historical source limitations and actual test evidence. Phase 4 assignment/contact services and reporting are next; Phase 5 production launch checks remain. The older Phase 1/2 outstanding-work paragraphs below are historical and superseded for delivered Phase 3 behavior.
+
 ## Phase 2 — Info Com delivered
 
 Final verification: **97 tests passed, 536 assertions** on the dedicated MariaDB test database; **11 browser/concurrency scenario groups passed**, including 101 CSV rows through real database-queue chunk handoffs and two simultaneous PHP check-in processes producing the same single attendance row. Final Pint formatting, Blade compilation, Vite build, Composer validation and application migration status checks passed. Local /login returns HTTP 200. The application imports worker is running. Test fixtures and synthetic sessions were removed afterward; application data was never refreshed.

@@ -62,12 +62,12 @@ class CommitInfoImport implements ShouldQueue
             }, 3);
         } catch (\Throwable $error) {
             Log::error('Info Com import chunk paused.', ['batch_id' => $this->batchId, 'exception_class' => $error::class]);
-            InfoImportBatch::whereKey($this->batchId)->update(['status' => 'failed', 'failure_message' => 'Import paused. The interrupted chunk was rolled back. Review permissions and retry; completed rows will not be imported twice.']);
+            InfoImportBatch::whereKey($this->batchId)->where('status', 'processing')->update(['status' => 'failed', 'failure_message' => 'Import paused. The interrupted chunk was rolled back. Review permissions and retry; completed rows will not be imported twice.']);
         }
     }
 
     public function failed(?\Throwable $exception): void
     {
-        InfoImportBatch::whereKey($this->batchId)->update(['status' => 'failed', 'failure_message' => 'The worker stopped before completing this import. Retry safely from the remaining rows.']);
+        InfoImportBatch::whereKey($this->batchId)->where('status', 'processing')->update(['status' => 'failed', 'failure_message' => 'The worker stopped before completing this import. Retry safely from the remaining rows.']);
     }
 }

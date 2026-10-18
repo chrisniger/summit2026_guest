@@ -1,5 +1,13 @@
 # 10 — Security, privacy, reliability and operations
 
+## Implemented local release controls — Phase 5
+
+The current release is local/internal at the owner's request; production checklist below remains future work. Responses, including error responses, use private no-store and browser privacy/security headers. Private storage does not expose a serving route and throws on writes; failed originals cannot create an import batch. Queue retry_after 300 exceeds the 120-second import timeout, and delayed failure callbacks cannot regress completed work. Super Admin can auditably lock/unlock attendance and inspect read-only Operations; CLI doctor and worker/scheduler heartbeats support local monitoring.
+
+Native forms block offline saves and repeated native submission without persisting personal values in browser storage. Recovery pages hide raw exceptions. Encrypted local backup/restore rehearsal covers SQL, existing APP_KEY and original files, with 21 table-count and staff-hash checks in an isolated database. Snapshot limit 32 MiB expanded; separate recovery password, private configuration and off-device copies require operator care. Retention/recovery commands default to dry-run; no automated deletion was configured. See LOCAL_OPERATIONS_RUNBOOK.md for exact commands and limits.
+
+Password policy follows the owner's explicit internal-app decision: minimum 8 characters, no character-type restrictions; passwords remain hashed and actual saved credentials are verified. Existing credentials and key are preserved.
+
 ## Authentication and authorization
 - Strong hashed passwords (Laravel standard); login throttle; rotate sessions on authentication; user deactivation revokes access.
 - Policies checked on every action and scoped query. Ownership tested for officers with object-level authorization (including exports).

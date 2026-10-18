@@ -23,4 +23,9 @@ class FollowUpActivity extends Model
     {
         return $this->belongsTo(FollowUpAssignment::class, 'assignment_id');
     }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actor_user_id');
+    }
 }

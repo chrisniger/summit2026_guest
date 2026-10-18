@@ -1,14 +1,80 @@
 # SUMMIT 2026 — complete developer / AI handoff
 
 **Snapshot date:** 18 October 2026, Africa/Lagos (WAT).  
-**Workspace:** `E:\WEBSITE UPGRADE\SUMMIT_2026_APP`  
+**Workspace:** `D:\Apps\summit2026_plus`  
 **Owner / existing administrator:** Chris — `chrisniger101@gmail.com`  
-**Current delivery:** Phase 1 foundation and Phase 2 Info Com implemented; Phase 3 Guest Service capture/import is next.  
+**Current delivery:** Phases 1–5 implemented for the local internal app; production hosting is deferred by the owner.  
 **Purpose:** Give another AI or developer enough context to continue without repeating discovery, resetting the application, confusing the two domains, or claiming unfinished features work.
 
 This document describes the current implementation, verified operating state, original requirements, decisions, limitations, and continuation work. The source files and migrations remain authoritative for exact executable behavior. Read this alongside `AGENTS.md`, the three root prompts and `docs/`.
 
-No application code or database records were changed while preparing this handoff. Runtime/configuration and database checks were read-only. The implementation test results below are the last completed verification, not a claim that the suite was rerun for this documentation-only task.
+The original handoff was a Phase 2 snapshot. The Phase 5 update below is authoritative; older phase status, process IDs and uncommitted-work statements are historical.
+
+## Current Phase 5 local release — authoritative update
+
+The owner explicitly requested local internal operation and a final commit/push to https://github.com/chrisniger/summit2026_guest. The release includes all Phase 3–5 source changes and updated docs on main. Use `git log -1` and `git ls-remote origin refs/heads/main` for the actual release revision; do not rely on the old initial f7d2647 snapshot below. No production deployment is part of this release.
+
+Read docs/PHASE_5_COMPLETION_REPORT.md and docs/LOCAL_OPERATIONS_RUNBOOK.md first. Local URL remains http://127.0.0.1:8000. Start/reuse the app, imports worker and scheduler with `.\start-local.ps1 -RestartWorkers`; it preserves environment/key/data and refuses a foreign port owner. PHP defaults to D:\php84\php.exe; XAMPP provides the running MariaDB at 127.0.0.1:3306. Runtime PID receipts are private in storage/app/local-processes.json. Recheck process command lines because PIDs change. Do not restore the removed E: workspace or launch duplicate servers.
+
+New Phase 5 code: app/Http/Middleware/ProtectResponse.php; app/Services/Operations.php and LocalBackup.php; app/Console/Commands/OperationsCheck.php, ImportMaintenance.php, LocalBackupCommand.php and VerifyLocalBackup.php; resources/views/admin/operations.blade.php; generic errors/409,419,429,500,503 and recovery.blade.php; start-local.ps1; tests/Feature/ReleaseOperationsTest.php; tests/Browser/release-fixtures.php and release-smoke.mjs. Existing bootstrap/provider/routes/config/import jobs/services, SessionManager, layouts and app.js integrate the changes. No new dependency or Phase 5 schema migration.
+
+ProtectResponse applies private no-store plus browser privacy/security headers, including error responses. HSTS only on HTTPS. Native forms block offline saves while retaining current page inputs and prevent double native submission; Livewire owns its own submission lifecycle. No offline values are written to browser storage, and reload/navigation/browser closure does not preserve them. Recovery pages do not expose raw exceptions or depend on database/auth/Vite. Session lock/unlock is audited and preserves configured clock boundaries.
+
+Queue retry_after defaults to 300 seconds, longer than job timeout 120. Original-upload failure cannot create a batch; delayed job failure cannot regress completed status. Queue-loop and scheduler cache heartbeats support the read-only Super Admin /admin/operations page and `php artisan summit:doctor` (`--json`, optional `--production`). Production checks intentionally fail the local configuration. Scheduler does not delete anything or automatically back up. Local warnings for real staffing, actual times and MariaDB lifecycle are expected until resolved.
+
+Import maintenance: `summit:imports:maintain recover` dry-runs batches stalled processing over ten minutes; `--apply` marks eligible batches failed under locks, then retry via authorized import screens. `prune --days=N` requires an explicit positive approved age; dry-run first, then deliberate --apply. Only completed originals beneath guarded domain paths are removed; source rows/provenance remain. No retention age has been approved/applied to main DB, and backups retain their own copies.
+
+Encrypted local backups: `summit:backup --password-file=storage/app/private/backup-recovery-key.txt --dump-binary=D:\xampp\mysql\bin\mysqldump.exe`. The private random password file already exists; never print it, commit it or replace it without preserving recovery of existing archives. Keep a separate protected copy. Snapshots contain SQL, archived APP_KEY, encrypted private originals and SHA manifest under AES-256 ZIP encryption. Full .env is excluded; keep protected configuration separately. The command briefly enters maintenance, preserves prior maintenance state and refuses outstanding imports. Expanded snapshots are capped at 32 MiB for local PHP 128 MiB memory; larger data needs an approved streaming solution. Temporary plaintext/client-option files are cleaned up.
+
+Archives/verification receipts are database-scoped: storage/app/private/backups/summit_2026 (actual app) and summit_2026_test (synthetic tests). An early unscoped private archive may remain in the parent directory. Verify with `summit:backup:verify {archive} --password-file=storage/app/private/backup-recovery-key.txt --mysql-binary=D:\xampp\mysql\bin\mysql.exe`. Only a newly created summit_2026_restore_check rehearsal DB is restored/dropped; existing target and active-connection target are refused. All21 critical table counts, staff identity/password hashes and original decryptability are checked. Wrong password fails safely. This is a rehearsal, not live replacement. Doctor treats a scoped receipt less than 24 hours old as fresh; arrange manual backups and off-device copies until automation is explicitly configured.
+
+Release verification: 165 PHPUnit tests / 1007 assertions, four sequential Chrome suites/30 scenario groups; 1,749 Info Com + 1,000 Guest Service queued CSV rows with deliberate same-phone independence and worker recovery; 16 simultaneous check-ins; 200 guest assignments and 8 same-UUID contact processes yielding one activity; encrypted restore of 21 tables and 2 synthetic originals; wrong-password rejection; offline reconnect/save once; 320/360/768/1440px layouts, labels/keyboard/reduced motion; report download reconciliation. Main encrypted backup restore also matches 21 tables and saved credentials. Tests use summit_2026_test only, never main; browser/automated suites must run sequentially. Evidence under ignored storage/app/*-checks. Pint/build/Blade/Composer checks pass; npm and Composer audits reported zero advisories when checked.
+
+Preserved main DB state at release verification: one existing Super Admin, eight 2026 sessions disabled with actual clock times unset; no operational attendees/guests/assignments/activities or imported originals. Owner password was not changed, stored in source or added to docs. Password policy remains minimum 8 with any composition, verifying the saved hash. Do not seed sample staff into main. Staff bootstrap refuses an existing Super Admin.
+
+Remaining owner work: actual WAT times and explicit session enablement; real team accounts/permissions; approved retention/correction choices; verified historical source/session mapping; separate safe recovery-password/archive copies; rehearsal on actual team devices/network. Future production requires host/domain approval, maintained database, least privilege, HTTPS, production settings, real mail if needed, process supervision and scheduled/off-device backup/monitoring. Physical iOS/Android and internet-hosted behavior were not certified. The app remains local as requested.
+
+## Historical Phase 4 implementation update
+
+The user authorized Phase 4 and it is now implemented in D:\Apps\summit2026_plus. Read docs/PHASE_4_COMPLETION_REPORT.md and the latest IMPLEMENTATION_PROGRESS.md first. This update supersedes the Phase 3/Phase 2 missing-work statements below. The existing Git remote remains chrisniger/summit2026_guest, main at initial commit f7d2647; Phase 3–4 edits are local and uncommitted.
+
+Delivered: exact bulk review/confirmation; transactional assignment/reassignment/unassignment with retained ownership history; current-assignment officer dashboard; tap-to-call and actual contact/notes; current status plus activity/status history; scoped follow-up metrics, officer performance, roster/timeline and five CSV exports. Phase 5 release work is next.
+
+New code: FollowUpAssignments, FollowUpContact, FollowUpReports, FollowUpActivityRequest, FollowUpController, FollowUpReportController; guest/assignment-confirm.blade.php, guest/contact-panel.blade.php, guest/reports.blade.php; FollowUpAssignmentTest, FollowUpContactTest, FollowUpReportTest; tests/Browser/follow-up-fixtures.php and follow-up-smoke.mjs. Dashboard, GuestController, policies/Gates, model relationships, navigation and guest detail/queue integrate the new services. No dependency was added.
+
+Migration 2026_10_18_193725_extend_follow_up_operations is applied. It adds nullable unique source_fingerprint and guest/attempt-time index to follow_up_activities; follow_up_assignments adds closure_reason, preserving the original assignment reason. Existing users, password hash, APP_KEY, data counts and eight sessions are preserved. No application rows were seeded for operational guests/officers.
+
+Assignment confirmation is an encrypted, actor-bound, 15-minute snapshot of ascending guest IDs, guest versions and current assignment IDs. Reason is required. Commit rechecks access, archival state, versions/current owners and active officer role, then changes the entire selection atomically. Assign accepts unassigned only; Reassign explicitly replaces owners; Unassign closes without deleting. Same owner is unchanged. Stale/replayed changed confirmations return 409 without duplicate history. Ownership changes increment guest.version; existing capture/contact forms become stale.
+
+Contact inputs: submission_id UUID, version, expected assignment_id, method, outcome, attempted_at (Y-m-dTH:i in WAT), comment and explicit two_way_confirmed / failed_attempt_confirmed as required. Activity/current status/version/history/audit commit together. Ordinary officers must still own the active assignment under row locks. Actor-scoped fingerprints replay once under the same current assignment. A later actual attempt timestamp determines current status; earlier attempts remain recorded without overwriting it. NOTE_ONLY leaves status unchanged and does not count as an actual attempt.
+
+Officer privacy is stricter than guest profile access: after reassignment former officers lose guest/detail/write/export access immediately; new officers see only their own activity under the current assignment. Managers can see full permitted histories. Data Entry sees no contact histories by default. Current status itself remains visible with the authorized profile.
+
+Routes: POST /follow-up/assignments/preview and /commit; POST /follow-up/guests/{guest}/activities; GET /follow-up/reports and /reports/export. Assignment endpoints require guest.assign; reports Gate allows guest.report.view managers or own-scope officers. Five CSV export types are guests, assignments, status, officers and activities.
+
+Report cohort filters: year/session/day/encounter dates/name/phone/status/current officer/assignment/source/archive. Activity filters: WAT date boundaries and actor. Current status/ownership are never presented as historical snapshots. Success = distinct successful guests / distinct attempted guests in the same cohort/activity period; NOTE_ONLY excluded. Current workload counts active assignments only. Actor performance can retain credit after reassignment. Untouched = no actual attempt under current owner/current assignment in the selected period. Inactive officers retain visible manager workload/history but cannot receive new assignments.
+
+Verification: 154 tests / 936 assertions; seven Phase 4 plus sixteen rerun prior-phase real Chrome/concurrency groups (23 total), including duplicate contacts, competing owners and contact-versus-reassignment. Full build/format/Blade/Composer/migration checks pass. Evidence is private/ignored under storage/app/follow-up-browser-checks. All browser fixtures use summit_2026_test and are removed afterward; run tests/browsers sequentially.
+
+Local runtime still uses http://127.0.0.1:8000 and the existing imports worker in this checkout. Login returns 200. No production deployment or commit/push occurred in Phase 4. Next authorized implementation should focus on Phase 5 when requested; preserve actual session/staff/retention/production decisions for the owner.
+
+## Historical Phase 3 implementation update
+
+The application was committed and pushed to https://github.com/chrisniger/summit2026_guest (main, initial commit f7d2647), then cloned into D:\Apps\summit2026_plus. Phase 3 changes are local work in this checkout. The older Phase 2 snapshot below remains useful for foundational source details; its missing-Guest-Service statements, old runtime process IDs and next-phase recommendations are superseded by this update.
+
+Read docs/PHASE_3_COMPLETION_REPORT.md and the latest IMPLEMENTATION_PROGRESS.md first. Phase 3 now delivers guest entry, session-retaining batch capture, own-scope browsing/search/detail/edit, version conflicts, explicit guest-only duplicate review, and independent CSV/2025 XLSX upload/mapping/preview/review/queued commit/progress/retry/results. Assignment/contact workflows and follow-up performance reporting are Phase 4.
+
+Source additions: GuestController, GuestImportController, GuestRequest, GuestCapture, GuestImport, GuestWorkbook, GuestImportBatch, GuestImportRow, CommitGuestImport, resources/views/guest/*, GuestCaptureTest, GuestImportTest and tests/Browser/guest-smoke.mjs. Routes use /follow-up/guests and /follow-up/imports with guest.* permissions and per-record policies. Imports require guest.import plus guest.create; non-Super Admin users can access only their own batches.
+
+New additive migration: 2026_10_18_191352_extend_guest_capture_and_imports.php. guest_records adds nullable unique source_fingerprint and integer version; guest_import_batches adds private_path, rows_review, rows_processed, rows_skipped and failure_message. Guest import row uniqueness now includes worksheet_name, allowing repeated physical row numbers across worksheets. The migration is applied. Existing credentials, APP_KEY, users, data and eight sessions were preserved.
+
+Guest creation never calls Info Com services. Captures accept an explicit disabled/ended/historical encounter session. Creation defaults NOT CONTACTED and unassigned. Actor-scoped UUID retry and event locks use fresh locking reads to handle MariaDB repeatable-read snapshots. Editing uses integer version and 409 for stale changes. Legacy metadata is preserved without importing current assignment/status/activity.
+
+XLSX uses installed PHP ZIP/DOM/libxml extensions; no package was added. It is a bounded literal OOXML reader, not CSV disguised as XLSX. Required header aliases, selected worksheets and explicit worksheet/event-to-session mapping are supported. Configure verified 2025 historical sessions using the Super Admin form on Guest imports. Unsupported macros/formulas/errors/unsafe XML and ambiguous dates are rejected/quarantined. Limits and exact replay identity are documented in the completion report.
+
+Verified: 125 PHPUnit tests / 730 assertions; five Phase 3 plus eleven Phase 1–2 real Chrome/concurrency groups; 101-row actual queue import; mobile 360px and desktop 1440px layouts; Pint dirty, Composer validation, Vite build, Blade compile and migration status. Browser fixtures are restricted to summit_2026_test and cleaned up. Screenshots/results are ignored/private under storage/app/guest-browser-checks. PLAYWRIGHT_MODULE may point to an already installed external Playwright package when running the browser script.
+
+Next authorized phase, when requested: Phase 4 — transactional assignments/reassignments, scoped officer contact attempts/status history, reports and exports. Keep Phase 5 launch work separate. No production deployment has occurred.
 
 ## Contents
 
@@ -49,20 +115,20 @@ No application code or database records were changed while preparing this handof
 - The disposable testing database is **`summit_2026_test`** on the same instance.
 - Never run `migrate:fresh`, `db:wipe`, test fixtures or destructive resets against `summit_2026`.
 - Preserve the existing administrator, password hash, `APP_KEY`, event/session configuration and any data entered after this snapshot.
-- The current folder has **no Git repository**. No commit, push, remote or deployment has been created. Recheck before relying on Git-based operations.
+- Git remote is https://github.com/chrisniger/summit2026_guest on main. Inspect git status before changes; Phase 3 changes are local. No production deployment has occurred.
 - The existing application runs at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 - The local imports worker is also running.
 - Check processes/ports before launching duplicates. Process IDs in this handoff are historical observations and must be revalidated.
-- Build the next authorized phase within the current app. The latest user request was to prepare this handoff, not to begin Phase 3 in the background.
-- When asked to continue implementation, start with **Guest Service capture and its independent import pipeline**.
-- Full operational follow-up assignment/contact workflows are **not** implemented merely because their tables and models exist.
+- The user authorized Phases 3 and 4, now implemented. Begin Phase 5 when requested.
+- When asked to continue the next phase, start with **Phase 5 stabilization and release**.
+- Assignment/contact workflows are implemented and verified; see the authoritative Phase 4 update above.
 
 ### Quick inspection
 
 Run from the project root in PowerShell:
 
 ```powershell
-Set-Location -LiteralPath 'E:\WEBSITE UPGRADE\SUMMIT_2026_APP'
+Set-Location -LiteralPath 'D:\Apps\summit2026_plus'
 php -v
 php artisan --version
 php D:\php84\composer.phar show --direct
@@ -223,7 +289,7 @@ The Follow-Up Admin, Data Entry and Officer landing screens are branded **worksp
 | Item | Verified value |
 |---|---|
 | OS / shell | Windows, PowerShell |
-| Project | `E:\WEBSITE UPGRADE\SUMMIT_2026_APP` |
+| Project | `D:\Apps\summit2026_plus` |
 | PHP executable | `D:\php84\php.exe` |
 | PHP version | 8.4.22 |
 | PHP requirement declared in Composer | `^8.4.1` |
@@ -318,7 +384,7 @@ The zero counts are a snapshot, **not an instruction to clear data**. Preserve a
 ### Existing installation: normal use
 
 ```powershell
-Set-Location -LiteralPath 'E:\WEBSITE UPGRADE\SUMMIT_2026_APP'
+Set-Location -LiteralPath 'D:\Apps\summit2026_plus'
 
 # Only if the web server is not already running:
 php artisan serve --host=127.0.0.1 --port=8000 --no-reload
@@ -2010,9 +2076,9 @@ The owner prefers action over repeated confirmations. Choose and document ordina
 
 ### Suggested prompt to give the next AI
 
-> Read handoff.md, AGENTS.md, prompt1.md, prompt2.md, prompt3.md and the relevant docs. Continue the existing SUMMIT 2026 Laravel application with Phase 3: independent Guest Service capture, session-retaining batch entry, own-scope guest search/detail/edit, duplicate review, guest CSV and historical 2025 XLSX imports. Reuse the existing schemas, permissions, branding and services where appropriate without linking guests to Info Com. Preserve the existing administrator, application key, database and completed Phases 1–2. Use the running XAMPP MariaDB, keep tests restricted to summit_2026_test, verify actual behavior and report results. Do not invent session times, merge by phone, create guests from attendance, or claim assignment/contact workflows are complete before implementing them. Work through the authorized phase and document any genuinely unresolved configuration.
+> Historical Phase 3 kickoff prompt (completed; consult the current update above): Read handoff.md, AGENTS.md, prompt1.md, prompt2.md, prompt3.md and the relevant docs. Continue the existing SUMMIT 2026 Laravel application with Phase 3: independent Guest Service capture, session-retaining batch entry, own-scope guest search/detail/edit, duplicate review, guest CSV and historical 2025 XLSX imports. Reuse the existing schemas, permissions, branding and services where appropriate without linking guests to Info Com. Preserve the existing administrator, application key, database and completed Phases 1–2. Use the running XAMPP MariaDB, keep tests restricted to summit_2026_test, verify actual behavior and report results. Do not invent session times, merge by phone, create guests from attendance, or claim assignment/contact workflows are complete before implementing them. Work through the authorized phase and document any genuinely unresolved configuration.
 
 ### Final reminders
 
-The next AI should be able to continue from the **current working app**, not from the original blank-project prompt. Preserve the owner account, eight-session authority, eight-character password policy, database isolation, audit trail and independent operational domains. A green foundation suite does not imply Phase 3 or Phase 4 exists. The next meaningful implementation work is **Guest Service**, followed by assignment/contact operations and launch validation.
+The next AI should be able to continue from the **current working app**, not from the original blank-project prompt. Preserve the owner account, eight-session authority, eight-character password policy, database isolation, audit trail and independent operational domains. A green foundation suite does not imply Phase 3 or Phase 4 exists. Phase 3 Guest Service capture/import is now implemented. Phase 4 assignment/contact operations are now implemented. The next meaningful implementation work is **Phase 5 stabilization and release**.
 
