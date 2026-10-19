@@ -35,4 +35,14 @@ class ConferenceSession extends Model
     {
         return $query->whereHas('event', fn (Builder $event) => $event->where('year', 2026));
     }
+
+    public function scopeTestSessions(Builder $query): Builder
+    {
+        return $query->where('code', 'like', 'TEST-%');
+    }
+
+    public function isTest(): bool
+    {
+        return str_starts_with($this->code, 'TEST-');
+    }
 }

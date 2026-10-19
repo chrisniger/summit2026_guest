@@ -21,6 +21,17 @@ class SessionManager extends Component
 
     public bool $enabled = false;
 
+    public string $testDate = '';
+
+    public string $testStart = '00:00';
+
+    public string $testEnd = '23:59';
+
+    public function mount(): void
+    {
+        $this->testDate = now(config('summit.timezone'))->format('Y-m-d');
+    }
+
     public function edit(int $id): void
     {
         Gate::authorize('platform.manage');
@@ -40,6 +51,32 @@ class SessionManager extends Component
         $schedule->configure(auth()->user(), $session, $this->start ?: null, $this->end ?: null, $this->enabled);
         $this->editing = null;
         session()->flash('status', 'Session schedule saved.');
+    }
+
+    public function addTestSession(SessionSchedule $schedule): void
+    {
+        Gate::authorize('platform.manage');
+        $this->validate([
+            'testDate' => 'required|date_format:Y-m-d',
+            'testStart' => 'required|date_format:H:i',
+            'testEnd' => 'required|date_format:H:i',
+        ], [], ['testDate' => 'test date', 'testStart' => 'start time', 'testEnd' => 'end time']);
+        $session = $schedule->addTestSession(auth()->user(), $this->testDate, $this->testStart, $this->testEnd);
+        $this->testStart = '00:00';
+        $this->testEnd = '23:59';
+        $this->editing = null;
+        $this->resetValidation();
+        session()->flash('status', 'Test session added for '.$session->date_local->format('j M Y').' and enabled.');
+    }
+
+    public function removeTestSession(int $id, SessionSchedule $schedule): void
+    {
+        Gate::authorize('platform.manage');
+        $session = ConferenceSession::currentConference()->testSessions()->findOrFail($id);
+        $schedule->removeTestSession(auth()->user(), $session);
+        $this->editing = null;
+        $this->resetValidation();
+        session()->flash('status', 'Test session removed.');
     }
 
     public function cancel(): void

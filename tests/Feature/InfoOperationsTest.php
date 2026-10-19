@@ -112,7 +112,7 @@ class InfoOperationsTest extends TestCase
         $this->assertDatabaseCount('info_attendees', 2);
     }
 
-    public function test_check_in_desk_requires_identity_selection_and_resets_after_success(): void
+    public function test_check_in_desk_marks_present_in_one_click_and_resets_search(): void
     {
         $session = ConferenceSession::first();
         $this->configure($session);
@@ -120,9 +120,10 @@ class InfoOperationsTest extends TestCase
         $actor = $this->userWithRole('info_com');
         $attendee = InfoAttendee::factory()->create();
         Livewire::actingAs($actor)->test(CheckInDesk::class)
-            ->call('mark', $session->id)->assertHasErrors('selected')
-            ->set('search', $attendee->first_name)->call('selectAttendee', $attendee->id)->call('mark', $session->id)
-            ->assertHasNoErrors()->assertSet('search', '')->assertSet('selected', null)->assertDispatched('check-in-saved');
+            ->set('search', $attendee->first_name)
+            ->call('mark', $attendee->id, $session->id)
+            ->assertHasNoErrors()->assertSet('search', '')->assertDispatched('check-in-saved')->assertSee('Checked in')->assertDontSee('Attendee #')->assertSeeHtml('is-present');
+        $this->assertDatabaseHas('info_attendance_records', ['info_attendee_id' => $attendee->id, 'conference_session_id' => $session->id]);
     }
 
     public function test_validation_rejects_invalid_phone_and_unauthorized_roles(): void

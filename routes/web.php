@@ -10,12 +10,15 @@ use App\Http\Controllers\InfoAttendanceController;
 use App\Http\Controllers\InfoAttendeeController;
 use App\Http\Controllers\InfoImportController;
 use App\Http\Controllers\InfoReportController;
+use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\StaffController;
 use App\Models\AuditLog;
 use App\Services\Operations;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
+Route::get('/info-com/attendance', [PublicAttendanceController::class, 'show'])->middleware('throttle:60,1')->name('attendance.public');
+Route::post('/info-com/attendance', [PublicAttendanceController::class, 'store'])->middleware('throttle:20,1')->name('attendance.public.store');
 Route::middleware('guest')->group(function () {
     Route::view('/login', 'auth.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.store');

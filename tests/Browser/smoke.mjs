@@ -173,8 +173,7 @@ try {
             await page.locator('article').filter({ hasText: 'Jane ' + prefix }).waitFor();
             await page.getByLabel('Search by name or phone').fill('08087654321');
             const card = page.locator('article').filter({ hasText: 'Pending ' + prefix });
-            await card.getByRole('button', { name: 'Select attendee', exact: true }).click();
-            await card.getByRole('button', { name: 'Confirm present', exact: true }).click();
+            await card.getByRole('button', { name: /Mark present/ }).click();
             await page.getByText('Present — check-in saved.', { exact: true }).waitFor();
             assert.equal(await page.getByLabel('Search by name or phone').inputValue(), '');
             await noOverflow();
@@ -182,7 +181,7 @@ try {
             await page.setViewportSize({ width: 1440, height: 1000 });
             await screenshot('check-in-desktop');
             await page.setViewportSize({ width: 360, height: 800 });
-            results.push('Onsite forms, auto attendance, shared-phone search and confirmed manual check-in');
+            results.push('Onsite forms, auto attendance, shared-phone search and one-click manual check-in');
         }
         assert.equal(await page.getByRole('link', { name: 'Staff & roles' }).count(), 0, 'Admin navigation hidden');
         const denied = await page.goto('http://127.0.0.1:8001/admin/staff');

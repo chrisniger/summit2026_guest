@@ -33,9 +33,27 @@ class InfoAttendance
         }, 3);
     }
 
-    public function record(User $actor, InfoAttendee $attendee, ConferenceSession $session, CarbonInterface $instant, string $source, ?InfoRegistrationEvent $event = null, ?int $rowId = null): array
+    /**
+     * Mark an attendee present from the public self-service attendance page.
+     *
+     * @return array{record: InfoAttendanceRecord, already_present: bool}
+     */
+    public function selfService(InfoAttendee $attendee, ConferenceSession $session, CarbonInterface $instant): array
     {
-        Gate::forUser($actor)->authorize($source === 'csv_auto' ? 'info.import' : 'info.attendance.mark');
+        return DB::transaction(function () use ($attendee, $session, $instant) {
+            $this->lockConference();
+            $locked = InfoAttendee::whereKey($attendee->id)->lockForUpdate()->firstOrFail();
+
+            return $this->record(null, $locked, $session, $instant, 'registration_auto');
+        }, 3);
+    }
+
+    public function record(?User $actor, InfoAttendee $attendee, ConferenceSession $session, CarbonInterface $instant, string $source, ?InfoRegistrationEvent $event = null, ?int $rowId = null): array
+    {
+        abort_unless($actor || $source === 'registration_auto', 403);
+        if ($actor) {
+            Gate::forUser($actor)->authorize($source === 'csv_auto' ? 'info.import' : 'info.attendance.mark');
+        }
         $existing = InfoAttendanceRecord::where('info_attendee_id', $attendee->id)->where('conference_session_id', $session->id)->first();
         if ($existing) {
             abort_if($existing->voided_at !== null, 409, 'This attendance was voided. A Super Admin must restore it with a reason.');
@@ -45,7 +63,7 @@ class InfoAttendance
         $record = InfoAttendanceRecord::create([
             'info_attendee_id' => $attendee->id, 'conference_session_id' => $session->id,
             'checked_in_at_utc' => $instant->copy()->utc(), 'source' => $source,
-            'marked_by_user_id' => $actor->id, 'registration_event_id' => $event?->id, 'import_row_id' => $rowId,
+            'marked_by_user_id' => $actor?->id, 'registration_event_id' => $event?->id, 'import_row_id' => $rowId,
         ]);
         app(Audit::class)->record('info_com', 'attendance.marked', $record, $actor, [], ['conference_session_id' => $session->id, 'source' => $source]);
 

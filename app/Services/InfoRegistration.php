@@ -11,9 +11,13 @@ use Illuminate\Support\Facades\Gate;
 
 class InfoRegistration
 {
-    public function register(User $actor, array $data, CarbonInterface $instant, string $fingerprint, string $source = 'onsite', ?int $rowId = null, ?int $existingId = null): array
+    public function register(?User $actor, array $data, CarbonInterface $instant, string $fingerprint, string $source = 'onsite', ?int $rowId = null, ?int $existingId = null): array
     {
-        Gate::forUser($actor)->authorize($source === 'csv' ? 'info.import' : 'info.attendee.create');
+        if ($actor) {
+            Gate::forUser($actor)->authorize($source === 'csv' ? 'info.import' : 'info.attendee.create');
+        } else {
+            abort_unless($source === 'other', 403);
+        }
 
         return DB::transaction(function () use ($actor, $data, $instant, $fingerprint, $source, $rowId, $existingId) {
             $attendance = app(InfoAttendance::class);
@@ -25,9 +29,9 @@ class InfoRegistration
             $attendee = $existingId
                 ? InfoAttendee::whereKey($existingId)->lockForUpdate()->firstOrFail()
                 : InfoAttendee::create([...$data, 'phone_normalized' => PhoneNumber::normalize($data['phone_raw']),
-                    'registration_original_at_utc' => $instant->copy()->utc(), 'registration_source' => $source, 'created_by_user_id' => $actor->id]);
-            $event = InfoRegistrationEvent::create(['info_attendee_id' => $attendee->id, 'source' => $source,
-                'registered_at_utc' => $instant->copy()->utc(), 'created_by_user_id' => $actor->id,
+                    'registration_original_at_utc' => $instant->copy()->utc(), 'registration_source' => $source, 'created_by_user_id' => $actor?->id]);
+            $event = InfoRegistrationEvent::create(['info_attendee_id' => $attendee->id, 'source' => in_array($source, ['onsite', 'csv'], true) ? $source : 'onsite',
+                'registered_at_utc' => $instant->copy()->utc(), 'created_by_user_id' => $actor?->id,
                 'import_row_id' => $rowId, 'source_fingerprint' => $fingerprint]);
             if ($existingId && $instant->lt($attendee->registration_original_at_utc ?? $attendee->created_at)) {
                 $attendee->update(['registration_original_at_utc' => $instant->copy()->utc()]);
