@@ -1992,7 +1992,7 @@ public/index.php
 public/brand/summit-logo.png
 public/favicon.ico
 public/robots.txt
-public/build/                     # generated
+public/build/                     # compiled by `npm run build`, committed to git
 ```
 
 Generated/private operational locations:
