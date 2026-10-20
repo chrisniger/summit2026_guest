@@ -14,6 +14,81 @@ use Tests\TestCase;
 
 class GuestCaptureTest extends TestCase
 {
+    public function test_guest_list_page_size_and_pagination_preserve_the_assignment_filter(): void
+    {
+        $actor = $this->userWithRole('follow_up_admin');
+        GuestRecord::factory()->count(51)->create();
+        $this->actingAs($actor)->get(route('guests.index', ['assignment' => 'unassigned']))
+            ->assertOk()->assertViewHas('guests', fn ($guests) => $guests->perPage() === 25 && $guests->count() === 25);
+        $this->get(route('guests.index', ['assignment' => 'unassigned', 'per_page' => 50]))
+            ->assertOk()->assertSee('Guests per page')->assertSee('Showing 1–50 of 51')
+            ->assertViewHas('guests', function ($guests): bool {
+                parse_str(parse_url($guests->nextPageUrl(), PHP_URL_QUERY), $query);
+
+                return $guests->count() === 50 && $query['assignment'] === 'unassigned' && $query['per_page'] === '50' && $query['page'] === '2';
+            });
+        $this->get(route('guests.index', ['assignment' => 'unassigned', 'per_page' => 50, 'page' => 2]))
+            ->assertOk()->assertSee('Showing 51–51 of 51')
+            ->assertViewHas('guests', fn ($guests) => $guests->count() === 1);
+        $this->get(route('guests.index', ['per_page' => 200]))->assertOk()
+            ->assertViewHas('guests', fn ($guests) => $guests->perPage() === 200 && $guests->count() === 51);
+        $this->get(route('guests.index', ['per_page' => 10000]))->assertSessionHasErrors('per_page');
+    }
+
+    public function test_save_returns_to_a_blank_form_with_confirmation_and_retained_date(): void
+    {
+        $actor = $this->userWithRole('data_entry');
+        $data = $this->data();
+        $this->actingAs($actor)->post(route('guests.store'), $data)
+            ->assertSessionHasNoErrors()->assertRedirect(route('guests.create'))
+            ->assertSessionHas('status', fn ($status) => str_contains($status, $data['full_name']) && str_contains($status, $data['phone_raw']));
+        $this->get(route('guests.create'))->assertOk()
+            ->assertSee('Guest saved: Mike Guest')
+            ->assertSeeHtml('name="full_name" required maxlength="255" autocomplete="name" value=""')
+            ->assertViewHas('selectedSession', $data['conference_session_id'])
+            ->assertViewHas('recentEntries', fn ($entries) => $entries->count() === 1 && $entries->first()->full_name === 'Mike Guest');
+    }
+
+    public function test_recent_entries_show_only_the_operators_latest_three_and_survive_a_new_session(): void
+    {
+        $actor = $this->userWithRole('super_admin');
+        $own = GuestRecord::factory()->count(4)->create(['created_by_user_id' => $actor->id]);
+        GuestRecord::factory()->create(['created_by_user_id' => $this->userWithRole('data_entry')->id, 'full_name' => 'Other operator entry']);
+        $expected = $own->reverse()->take(3)->pluck('id')->values()->all();
+        $this->actingAs($actor)->get(route('guests.create'))->assertOk()
+            ->assertViewHas('recentEntries', fn ($entries) => $entries->pluck('id')->all() === $expected)
+            ->assertDontSee('Other operator entry');
+        $this->flushSession();
+        $this->actingAs($actor)->get(route('guests.create'))->assertOk()
+            ->assertViewHas('recentEntries', fn ($entries) => $entries->pluck('id')->all() === $expected);
+    }
+
+    public function test_guest_form_saves_a_single_referral_and_restores_it_for_editing(): void
+    {
+        $actor = $this->userWithRole('data_entry');
+        $this->actingAs($actor)->get(route('guests.create'))->assertOk()
+            ->assertSeeHtml('for="conference_session_id">Date *')
+            ->assertSeeHtml('<select id="gender" name="gender">')
+            ->assertSee('Billboard')->assertDontSee('Actual encounter session')
+            ->assertSeeHtml('type="radio" name="heard_about"')
+            ->assertDontSeeHtml('name="heard_about[]"');
+        $this->post(route('guests.store'), $this->data([
+            'gender' => 'Female', 'home_address' => '12 Test Street',
+            'heard_about' => 'Social Media',
+        ]))->assertSessionHasNoErrors();
+        $guest = GuestRecord::sole();
+        $this->assertSame('Female', $guest->gender);
+        $this->assertSame('12 Test Street', $guest->home_address);
+        $this->assertSame('Social Media', $guest->heard_about);
+        $this->get(route('guests.edit', $guest))->assertOk()
+            ->assertSeeHtml('value="Social Media" checked')
+            ->assertDontSeeHtml('value="Personal Invitation" checked')
+            ->assertDontSeeHtml('value="Flyers" checked');
+        $this->patch(route('guests.update', $guest), $this->data(['version' => 1, 'heard_about' => ['Social Media', 'Flyers']]))->assertSessionHasErrors('heard_about');
+        $this->patch(route('guests.update', $guest), $this->data(['version' => 1, 'heard_about' => '']))->assertSessionHasNoErrors();
+        $this->assertNull($guest->fresh()->heard_about);
+    }
+
     private function data(array $extra = []): array
     {
         return [...['conference_session_id' => ConferenceSession::firstOrFail()->id, 'full_name' => 'Mike Guest',

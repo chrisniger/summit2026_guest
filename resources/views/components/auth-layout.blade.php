@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
     <title>{{ $title }} · SUMMIT 2026</title>
+    <x-theme-init />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -16,6 +17,7 @@
     </section>
     <section class="auth-form-panel">
         <div class="auth-form-inner">
+            <div class="theme-toolbar"><x-theme-switch /></div>
             <span class="eyebrow">CONFERENCE OPERATIONS</span>
             <h2>{{ $title }}</h2>
             @if(session('status'))<div class="notice success" role="status">{{ session('status') }}</div>@endif

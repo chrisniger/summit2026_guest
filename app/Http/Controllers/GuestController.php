@@ -20,12 +20,14 @@ class GuestController extends Controller
     public function index(Request $request): View
     {
         Gate::authorize('viewAny', GuestRecord::class);
+        $pagination = $request->validate(['per_page' => 'nullable|integer|in:25,50,100,200']);
+        $perPage = (int) ($pagination['per_page'] ?? 25);
         $reports = app(FollowUpReports::class);
         $filters = $reports->filters($request->all());
         $year = (int) ($filters['year'] ?? 2026);
         $query = $reports->base($request->user(), $filters)->with(['session.event', 'activeAssignment.officer']);
 
-        return view('guest.index', ['guests' => $query->orderByDesc('id')->paginate(25)->withQueryString(),
+        return view('guest.index', ['guests' => $query->orderByDesc('id')->paginate($perPage)->withQueryString(),
             'events' => ConferenceEvent::orderByDesc('year')->get(), 'year' => $year,
             'officers' => $request->user()->can('guest.assign') ? app(FollowUpAssignments::class)->officers()->get() : collect(),
             'sessions' => ConferenceSession::whereHas('event', fn ($q) => $q->where('year', $year))->orderBy('date_local')->orderBy('id')->get()]);
@@ -49,6 +51,9 @@ class GuestController extends Controller
         return view('guest.form', ['guest' => $guest, 'submissionId' => Str::uuid(),
             'selectedSession' => $guest?->conference_session_id ?? $request->session()->get('guest_entry_session'),
             'sessions' => ConferenceSession::with('event')->orderByDesc('date_local')->orderBy('id')->get(),
+            'recentEntries' => $guest ? collect() : GuestRecord::visibleTo($request->user())
+                ->where('created_by_user_id', $request->user()->id)->whereNull('archived_at')->whereNull('import_row_id')
+                ->with('session')->orderByDesc('id')->limit(3)->get(),
             'candidates' => $candidates->limit(10)->get()]);
     }
 
@@ -56,11 +61,8 @@ class GuestController extends Controller
     {
         $guest = $capture->create($request->user(), $request->validated(), $request->validated('submission_id'), $request->boolean('keep_separate'));
         $request->session()->put('guest_entry_session', $guest->conference_session_id);
-        if ($request->boolean('add_another')) {
-            return redirect()->route('guests.create')->with('status', $guest->full_name.' saved. Session retained for the next guest.');
-        }
 
-        return redirect()->route('guests.show', $guest)->with('status', 'Guest saved.');
+        return redirect()->route('guests.create')->with('status', 'Guest saved: '.$guest->full_name.' · '.$guest->phone_raw.'. Ready for the next guest; date selection retained.');
     }
 
     public function show(GuestRecord $guest): View

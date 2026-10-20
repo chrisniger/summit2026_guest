@@ -102,7 +102,6 @@ try {
         for (const id of ids) { await page.locator('input[name="guest_ids[]"][value="' + id + '"]').check(); }
         await page.locator('#assignment_action').selectOption(action);
         if (officer) { await page.locator('#officer_user_id').selectOption(String(officer)); }
-        await page.locator('#assignment_reason').fill('Reviewed browser allocation');
         await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Review assignment changes', exact: true }).click()]);
         await page.getByRole('heading', { name: 'Review assignment changes', exact: true }).waitFor();
     };

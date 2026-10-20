@@ -26,8 +26,9 @@ class FollowUpAssignments
         $data = Validator::make($input, [
             'guest_ids' => 'required|array|min:1|max:200', 'guest_ids.*' => 'required|integer|distinct',
             'action' => 'required|in:assign,reassign,unassign', 'officer_user_id' => 'nullable|required_unless:action,unassign|integer',
-            'reason' => 'required|string|min:5|max:1000',
+            'reason' => 'nullable|string|max:1000',
         ])->validate();
+        $data['reason'] ??= null;
         $ids = array_map('intval', $data['guest_ids']);
         sort($ids);
         $guests = GuestRecord::visibleTo($actor)->whereIn('id', $ids)->whereNull('archived_at')->with('activeAssignment.officer', 'session')->orderBy('id')->get();

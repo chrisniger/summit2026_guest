@@ -85,10 +85,10 @@ try {
     await page.setViewportSize({ width: 360, height: 800 });
     await screenshot('entry-mobile');
     const session = await page.locator('#conference_session_id option').nth(1).getAttribute('value');
-    await page.getByLabel('Actual encounter session', { exact: false }).selectOption(session);
+    await page.locator('#conference_session_id').selectOption(session);
     await page.getByLabel('Full name', { exact: false }).fill('Mobile Guest ' + prefix);
     await page.getByLabel('Phone', { exact: false }).fill('08023456789');
-    await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save & add another', exact: true }).click()]);
+    await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save guest', exact: true }).click()]);
     assert.equal(new URL(page.url()).pathname, '/follow-up/guests/create');
     assert.equal(await page.locator('#conference_session_id').inputValue(), session);
     assert.equal(await page.locator('#full_name').inputValue(), '');
@@ -100,6 +100,7 @@ try {
     await screenshot('duplicate-review-mobile');
     await page.getByLabel('I reviewed the matching records.', { exact: false }).check();
     await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save guest', exact: true }).click()]);
+    await page.getByRole('link', { name: 'Second Encounter ' + prefix, exact: true }).click();
     await page.getByRole('heading', { name: 'Second Encounter ' + prefix, exact: true }).waitFor();
     await screenshot('guest-detail-mobile');
     await page.getByRole('link', { name: 'Edit details', exact: true }).click();

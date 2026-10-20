@@ -3,6 +3,14 @@
 @source '../../storage/framework/views/*.php';
 @theme { --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; --color-summit-red: #F20D19; --color-summit-navy: #111A3D; }
 :root { --brand:#f20d19; --primary:#ce101c; --navy:#111a3d; --ink:#101114; --muted:#5d6475; --surface:#f6f7fb; --card:#fff; --border:#e2e5ee; --success:#166044; --success-bg:#eaf7ef; --warning:#815006; --warning-bg:#fff4d9; }
+:root { color-scheme:light; }
+:root[data-theme=dark] { color-scheme:dark; --primary:#ff727d; --navy:#e0e7ff; --ink:#edf0f7; --muted:#b0bacd; --surface:#101624; --card:#1b2435; --border:#354158; --success:#9ee4ba; --success-bg:#153b2d; --warning:#ffda8c; --warning-bg:#3d301a; }
+.theme-switch { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; min-width:44px; padding:8px 12px; margin:0; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--navy); font-size:12px; white-space:nowrap; }
+.theme-switch:hover { background:var(--surface); }
+.theme-switch .theme-sun,.theme-switch .theme-light-label { display:none; }
+[data-theme=dark] .theme-switch .theme-moon,[data-theme=dark] .theme-switch .theme-dark-label { display:none; }
+[data-theme=dark] .theme-switch .theme-sun,[data-theme=dark] .theme-switch .theme-light-label { display:inline; }
+.theme-toolbar { display:flex; justify-content:flex-end; margin-bottom:20px; }
 * { box-sizing:border-box; }
 body { margin:0; color:var(--ink); background:var(--surface); font-family:var(--font-sans); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; }
 h1,h2,h3,p { margin:0; }
@@ -102,10 +110,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { 
 .info-note .icon { width:17px; height:17px; }
 .page-footer { margin:0 36px; padding:20px 0; border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; gap:12px; }
 label { display:block; margin-bottom:8px; font-weight:600; font-size:13px; color:var(--navy); }
-input:not([type=checkbox],[type=hidden]),select,textarea { width:100%; min-height:46px; border:1px solid #ccd1dd; border-radius:6px; padding:11px 12px; background:var(--card); color:var(--ink); }
+input:not([type=checkbox],[type=radio],[type=hidden]),select,textarea { width:100%; min-height:46px; border:1px solid #ccd1dd; border-radius:6px; padding:11px 12px; background:var(--card); color:var(--ink); }
 input::placeholder { color:#8d93a0; }
 input[aria-invalid=true] { border-color:var(--primary); }
-input[type=checkbox] { width:18px; height:18px; accent-color:var(--primary); }
+input[type=checkbox],input[type=radio] { width:18px; height:18px; accent-color:var(--primary); }
 .form-stack { display:flex; flex-direction:column; gap:22px; }
 .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .form-stack small { display:block; color:var(--muted); margin-top:6px; font-size:11px; }
@@ -175,6 +183,11 @@ td strong { color:var(--navy); font-weight:600; }
 .guest-source>div { padding:10px 0; border-bottom:1px solid var(--border); }
 fieldset { border:1px solid var(--border); border-radius:6px; padding:16px; min-width:0; }
 legend { font-size:13px; font-weight:600; padding:0 6px; }
+.guest-referrals { padding:12px; }
+.referral-options { display:flex; flex-wrap:wrap; gap:8px; }
+.referral-options .checkbox-row { min-height:44px; padding:8px 12px; gap:8px; border:1px solid var(--border); border-radius:6px; background:var(--surface); font-size:12px; font-weight:500; cursor:pointer; }
+.referral-options .checkbox-row:has(input:checked) { border-color:var(--primary); color:var(--primary); }
+.referral-options input { flex-shrink:0; margin:0; }
 select { min-width:0; }
 .sidebar { overflow-y:auto; }
 .attendee-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:24px; }
@@ -228,3 +241,24 @@ select { min-width:0; }
 .public-footer { margin-top:18px; color:#aab3ce; font-size:10px; letter-spacing:1px; }
 @media(max-width:480px) { .public-card { padding:24px 20px; } .public-brand { margin:-24px -20px 24px; } }
 .additional-details summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-weight:600; color:var(--navy); font-size:13px; } .additional-details summary::before { content:"+"; font-size:20px; margin-right:12px; } .additional-details[open] summary::before { content:"−"; } .additional-details[open] .form-grid { margin:16px 0 22px; }
+[data-theme=dark] .sidebar,[data-theme=dark] .auth-brand { background:#111a3d; }
+[data-theme=dark] .public-body { background:radial-gradient(circle at 20% 0%,#1c2a5c 0%,#101624 55%); }
+[data-theme=dark] .auth-body,[data-theme=dark] .badge.outline,[data-theme=dark] .button.secondary,[data-theme=dark] .skip-link { background:var(--card); }
+[data-theme=dark] .badge.muted,[data-theme=dark] .avatar,[data-theme=dark] th,[data-theme=dark] .button.secondary:hover { background:#253147; }
+[data-theme=dark] .check-in-search { background:#1b2435f7; }
+[data-theme=dark] .metric-row,[data-theme=dark] th,[data-theme=dark] td { border-color:var(--border); }
+[data-theme=dark] .session-banner,[data-theme=dark] .public-session { background:var(--warning-bg); border-color:#6c542b; color:var(--warning); }
+[data-theme=dark] .session-banner strong,[data-theme=dark] .session-banner p,[data-theme=dark] .public-session .icon { color:var(--warning); }
+[data-theme=dark] .banner-icon { background:#594321; color:var(--warning); }
+[data-theme=dark] .notice.success { border-color:#2b6348; }
+[data-theme=dark] .notice.error { background:#421e28; color:#ffb2ba; border-color:#7d3947; }
+[data-theme=dark] .button.primary { background:#ce101c; color:#fff; }
+[data-theme=dark] .button.primary:hover { background:#af0e18; }
+[data-theme=dark] .domain-icon { background:#283b60; color:#b5c9ff; }
+[data-theme=dark] .domain-icon.red { background:#421e28; color:#ff9aa4; }
+[data-theme=dark] .attendee-card.is-present { background:linear-gradient(135deg,#153b2d,#1c4938); border-color:#428965; }
+[data-theme=dark] .attendee-card.is-present .card-title h2 { color:#b4f2cf; }
+[data-theme=dark] .pagination .bg-white { background:var(--card); }
+[data-theme=dark] .pagination .text-gray-700,[data-theme=dark] .pagination .text-gray-500 { color:var(--muted); }
+[data-theme=dark] .pagination .border-gray-300 { border-color:var(--border); }
+@media(max-width:480px) { .topbar .theme-switch>span { display:none; } }

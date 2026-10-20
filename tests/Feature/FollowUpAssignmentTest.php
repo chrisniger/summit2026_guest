@@ -11,6 +11,26 @@ use Tests\TestCase;
 
 class FollowUpAssignmentTest extends TestCase
 {
+    public function test_assign_reassign_and_unassign_work_without_a_reason(): void
+    {
+        $admin = $this->userWithRole('follow_up_admin');
+        $first = $this->userWithRole('officer');
+        $second = $this->userWithRole('officer');
+        $guest = GuestRecord::factory()->create();
+        $this->actingAs($admin)->get(route('guests.index', ['assignment' => 'unassigned']))
+            ->assertOk()->assertDontSee('Reason *')->assertDontSeeHtml('name="reason"');
+        foreach (['assign' => $first->id, 'reassign' => $second->id, 'unassign' => null] as $action => $officerId) {
+            $preview = $this->post(route('follow-up.assignments.preview'), [
+                'guest_ids' => [$guest->id], 'action' => $action, 'officer_user_id' => $officerId,
+            ])->assertOk()->assertDontSee('Reason:');
+            $this->post(route('follow-up.assignments.commit'), ['token' => $preview->viewData('token'), 'confirm' => 1])
+                ->assertSessionHasNoErrors()->assertRedirect(route('guests.index'));
+            $this->assertSame($officerId, $guest->activeAssignment()->first()?->officer_user_id);
+        }
+        $this->assertDatabaseCount('follow_up_assignments', 2);
+        $this->assertSame(2, FollowUpAssignment::whereNull('reason')->whereNotNull('unassigned_at')->count());
+    }
+
     private function selection(User $admin, array $ids, ?User $officer, string $action = 'assign'): array
     {
         return app(FollowUpAssignments::class)->preview($admin, ['guest_ids' => $ids, 'officer_user_id' => $officer?->id,

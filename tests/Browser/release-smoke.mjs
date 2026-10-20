@@ -111,7 +111,8 @@ try {
     await context.setOffline(false);
     await page.waitForFunction(() => navigator.onLine === true);
     await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save guest', exact: true }).click()]);
-    await page.getByRole('heading', { name: 'Offline recovery ' + prefix, exact: true }).waitFor();
+    await page.getByRole('link', { name: 'Offline recovery ' + prefix, exact: true }).waitFor();
+    assert.equal(await page.locator('#full_name').inputValue(), '');
     results.push('Offline save is blocked while entered values remain; reconnection saves one guest');
     for (const width of [320, 360, 768, 1440]) {
         await page.setViewportSize({ width, height: 900 });

@@ -181,9 +181,8 @@ class InfoCsvImport
                 return;
             }
             abort_unless(in_array($batch->status, ['previewed', 'failed'], true), 409, 'Preview this import first.');
-            if ($batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->exists()) {
-                throw ValidationException::withMessages(['import' => 'Resolve every review row before committing. No records have been imported from unresolved rows.']);
-            }
+            $batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->update(['classification' => 'new']);
+            $this->summarize($batch);
             $batch->update(['status' => 'processing', 'failure_message' => null]);
             app(Audit::class)->record('info_com', 'import.committed', $batch, $actor);
             CommitInfoImport::dispatch($batch->id, $actor->id)->onQueue('imports')->beforeCommit();

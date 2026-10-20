@@ -7,13 +7,19 @@
             <div><label for="search">Name or phone</label><input id="search" name="search" value="{{ request('search') }}" maxlength="255" placeholder="Search Guest Service"></div>
             <div><label for="year">Event year</label><select id="year" name="year" @change="$refs.session.value = ''">@foreach($events as $event)<option value="{{ $event->year }}" @selected($year === $event->year)>SUMMIT {{ $event->year }}</option>@endforeach</select></div>
             <div><label for="session">Encounter session</label><select id="session" name="session" x-ref="session"><option value="">All sessions in selected year</option>@foreach($sessions as $session)<option value="{{ $session->id }}" @selected(request('session') == $session->id)>{{ $session->date_local->format('d M Y') }} · {{ $session->label }}</option>@endforeach</select></div>
-            <div><label for="day">Conference day</label><input id="day" type="number" min="1" max="31" name="day" value="{{ request('day') }}"></div>
             <div><label for="status">Current status</label><select id="status" name="status"><option value="">All statuses</option>@foreach(['NOT CONTACTED', 'CONTACTED', 'UNREACHABLE'] as $status)<option @selected(request('status') === $status)>{{ $status }}</option>@endforeach</select></div>
-            <div><label for="assignment">Assignment</label><select id="assignment" name="assignment"><option value="">All assignments</option><option value="unassigned" @selected(request('assignment') === 'unassigned')>Unassigned</option><option value="assigned" @selected(request('assignment') === 'assigned')>Assigned</option></select></div>
-            <div><label for="archive">Record state</label><select id="archive" name="archive"><option value="active">Active records</option><option value="archived" @selected(request('archive') === 'archived')>Archived records</option></select></div>
+            <div><label for="per_page">Guests per page</label><select id="per_page" name="per_page">@foreach([25, 50, 100, 200] as $pageSize)<option value="{{ $pageSize }}" @selected($guests->perPage() === $pageSize)>{{ $pageSize }}</option>@endforeach</select></div>
         </div>
-        <div class="button-row"><button class="button primary">Apply filters</button><a class="button secondary" href="{{ route('guests.index') }}">Reset</a><span class="muted-text">{{ $guests->total() }} matching encounters</span></div>
+        <details class="additional-details">
+            <summary>Advanced filters @if(request('assignment') || request('archive') === 'archived')<span class="badge muted" style="margin-left:12px">Filters active</span>@endif</summary>
+            <div class="form-grid">
+                <div><label for="assignment">Assignment</label><select id="assignment" name="assignment"><option value="">All assignments</option><option value="unassigned" @selected(request('assignment') === 'unassigned')>Unassigned</option><option value="assigned" @selected(request('assignment') === 'assigned')>Assigned</option></select></div>
+                <div><label for="archive">Record state</label><select id="archive" name="archive"><option value="active">Active records</option><option value="archived" @selected(request('archive') === 'archived')>Archived records</option></select></div>
+            </div>
+        </details>
+        <div class="button-row"><button class="button primary">Apply filters</button><a class="button secondary" href="{{ route('guests.index') }}">Reset</a><span class="muted-text">Showing {{ $guests->firstItem() ?? 0 }}–{{ $guests->lastItem() ?? 0 }} of {{ $guests->total() }} matching encounters · Page {{ $guests->currentPage() }} of {{ $guests->lastPage() }}</span></div>
     </form>
+    @if($guests->hasPages())<div class="pagination">{{ $guests->links() }}</div>@endif
     <div class="attendee-grid">
         @forelse($guests as $guest)
             <article class="panel attendee-card">
@@ -34,7 +40,6 @@
             <div class="form-grid">
                 <div><label for="assignment_action">Action *</label><select id="assignment_action" name="action" required><option value="assign">Assign unassigned guests</option><option value="reassign">Reassign selected guests</option><option value="unassign">Unassign selected guests</option></select></div>
                 <div><label for="officer_user_id">New officer (except unassign)</label><select id="officer_user_id" name="officer_user_id"><option value="">Choose an active officer</option>@foreach($officers as $officer)<option value="{{ $officer->id }}">{{ $officer->name }}</option>@endforeach</select></div>
-                <div><label for="assignment_reason">Reason *</label><textarea id="assignment_reason" name="reason" minlength="5" maxlength="1000" required>{{ old('reason') }}</textarea></div>
             </div><button class="button primary">Review assignment changes</button>
         </form>
     @endcan

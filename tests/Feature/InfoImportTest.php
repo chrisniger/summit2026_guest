@@ -135,15 +135,14 @@ class InfoImportTest extends TestCase
         $this->assertSame('completed', $batch->fresh()->status);
     }
 
-    public function test_ambiguous_same_phone_requires_explicit_review_without_silent_merge(): void
+    public function test_possible_duplicate_can_still_be_matched_explicitly(): void
     {
         $actor = $this->userWithRole('super_admin');
         $attendee = InfoAttendee::factory()->create(['first_name' => 'Trusted', 'phone_normalized' => '+2348012345678']);
         $batch = app(InfoCsvImport::class)->preview($actor, $this->file([$this->row()]));
         $row = $batch->rows()->first();
         $this->assertSame('review', $row->classification);
-        $this->actingAs($actor)->post('/info-com/imports/'.$batch->id.'/commit', ['confirm' => 1])->assertSessionHasErrors('import');
-        $this->post('/info-com/imports/'.$batch->id.'/rows/'.$row->id, ['decision' => 'match', 'attendee_id' => $attendee->id])->assertSessionHasNoErrors();
+        $this->actingAs($actor)->post('/info-com/imports/'.$batch->id.'/rows/'.$row->id, ['decision' => 'match', 'attendee_id' => $attendee->id])->assertSessionHasNoErrors();
         app(InfoCsvImport::class)->commit($actor, $batch);
         $this->assertDatabaseCount('info_attendees', 1);
         $this->assertSame('Trusted', $attendee->fresh()->first_name);
@@ -157,10 +156,28 @@ class InfoImportTest extends TestCase
         $batch = app(InfoCsvImport::class)->preview($actor, $this->file([$first, $first, $this->row(['First Name' => 'Jane'])]));
         $rows = $batch->rows()->orderBy('row_number')->get();
         $this->assertSame(['new', 'duplicate', 'review'], $rows->pluck('classification')->all());
-        app(InfoCsvImport::class)->resolve($actor, $batch, $rows[2], 'new', null);
         app(InfoCsvImport::class)->commit($actor, $batch);
         $this->assertDatabaseCount('info_attendees', 2);
         $this->assertSame(1, $batch->fresh()->rows_skipped);
+        $this->assertSame(0, $batch->fresh()->rows_review);
+    }
+
+    public function test_existing_attendee_with_same_name_and_phone_does_not_block_confirmation(): void
+    {
+        $actor = $this->userWithRole('super_admin');
+        $existing = InfoAttendee::factory()->create(['first_name' => 'Mike', 'last_name' => 'CSV Test', 'phone_normalized' => '+2348012345678']);
+        $batch = app(InfoCsvImport::class)->preview($actor, $this->file([$this->row()]));
+        $this->assertSame(1, $batch->rows_review);
+        $this->actingAs($actor)->get('/info-com/imports/'.$batch->id)
+            ->assertOk()->assertSee('Individual review is optional.')
+            ->assertSeeHtml('<button class="button primary">Confirm import</button>');
+        $this->post('/info-com/imports/'.$batch->id.'/commit', ['confirm' => 1])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame('completed', $batch->fresh()->status);
+        $this->assertSame(0, $batch->fresh()->rows_review);
+        $this->assertSame(1, $batch->fresh()->rows_created);
+        $this->assertSame(0, $batch->fresh()->rows_matched);
+        $this->assertDatabaseCount('info_attendees', 2);
+        $this->assertNotSame($existing->id, $batch->rows()->first()->info_attendee_id);
     }
 
     public function test_invalid_timestamps_booleans_and_formula_like_phone_are_quarantined(): void

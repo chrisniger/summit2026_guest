@@ -7,6 +7,7 @@
     <meta name="robots" content="noindex,nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }} · SUMMIT 2026</title>
+    <x-theme-init />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -71,6 +72,7 @@
                 <span class="breadcrumb">SUMMIT 2026 <span>/</span> {{ $title }}</span>
             </div>
             <div class="account">
+                <x-theme-switch />
                 <span class="avatar">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
                 <span class="account-details"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span>
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="icon-button" aria-label="Sign out" title="Sign out"><x-icon name="logout" /></button></form>

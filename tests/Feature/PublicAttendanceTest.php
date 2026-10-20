@@ -82,6 +82,12 @@ class PublicAttendanceTest extends TestCase
         $this->assertSame('Chidi', $attendee->first_name);
         $this->assertSame('other', $attendee->registration_source);
         $this->assertSame('+2348095550111', $attendee->phone_normalized);
+        $this->get('/info-com/attendance')->assertOk()
+            ->assertSee('You are marked present.')
+            ->assertSee('Mark Additional Attendance')
+            ->assertSeeHtml('<details class="additional-details">')
+            ->assertDontSeeHtml('<details class="additional-details" open>')
+            ->assertSeeHtml('name="first_name" value=""');
         $this->assertDatabaseHas('info_registration_events', ['info_attendee_id' => $attendee->id, 'source' => 'onsite']);
         $this->assertDatabaseHas('info_attendance_records', [
             'info_attendee_id' => $attendee->id,
