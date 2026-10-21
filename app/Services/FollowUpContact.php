@@ -52,7 +52,7 @@ class FollowUpContact
             $next = $applies ? $outcomeStatus : $previous;
             $activity = new FollowUpActivity(['guest_record_id' => $guest->id, 'assignment_id' => $assignment?->id,
                 'actor_user_id' => $actor->id, 'method' => $data['method'], 'attempted_at_utc' => $instant,
-                'outcome' => $data['outcome'], 'comment' => $data['comment'], 'previous_status' => $previous, 'new_status' => $next]);
+                'outcome' => $data['outcome'], 'comment' => $data['comment'] ?? null, 'previous_status' => $previous, 'new_status' => $next]);
             $activity->forceFill(['source_fingerprint' => $fingerprint])->save();
             if ($data['outcome'] !== 'NOTE_ONLY') {
                 FollowUpStatusHistory::create(['guest_record_id' => $guest->id, 'from_status' => $previous, 'to_status' => $next,
