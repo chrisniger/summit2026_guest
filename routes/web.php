@@ -85,6 +85,8 @@ Route::middleware('auth')->group(function () {
         Route::view('/sessions', 'admin.sessions')->name('sessions');
         Route::get('/staff', [StaffController::class, 'index'])->name('staff');
         Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+        Route::get('/staff/{user}/edit', [StaffController::class, 'editAccount'])->name('staff.account.edit');
+        Route::patch('/staff/{user}/account', [StaffController::class, 'updateAccount'])->name('staff.account.update');
         Route::patch('/staff/{user}', [StaffController::class, 'update'])->name('staff.update');
         Route::get('/audit', fn () => view('admin.audit', ['logs' => AuditLog::orderByDesc('id')->paginate(30)]))->name('audit');
         Route::get('/operations', fn () => view('admin.operations', ['checks' => app(Operations::class)->checks()]))->name('operations');

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StaffRequest;
+use App\Http\Requests\UpdateStaffAccountRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -27,6 +29,65 @@ class StaffController extends Controller
         });
 
         return back()->with('status', 'Staff account created.');
+    }
+
+    public function editAccount(User $user): View
+    {
+        return view('admin.staff-edit', ['staff' => $user]);
+    }
+
+    public function updateAccount(UpdateStaffAccountRequest $request, User $user): RedirectResponse
+    {
+        $data = $request->safe()->only(['name', 'email', 'password']);
+        $isEditingOwnAccount = $user->is($request->user());
+        $credentialsChanged = $user->email !== $data['email'] || filled($data['password'] ?? null);
+
+        DB::transaction(function () use ($data, $user, $request, $isEditingOwnAccount, $credentialsChanged) {
+            $account = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $account->forceFill(collect($data)->except('password')->all());
+
+            if (filled($data['password'] ?? null)) {
+                $account->password = $data['password'];
+            }
+
+            if ($credentialsChanged) {
+                $account->remember_token = Str::random(60);
+            }
+
+            $account->save();
+
+            if ($credentialsChanged) {
+                $sessions = DB::table('sessions')->where('user_id', $account->id);
+
+                if ($isEditingOwnAccount) {
+                    $sessions->where('id', '!=', $request->session()->getId());
+                }
+
+                $sessions->delete();
+            }
+
+            $changedFields = [];
+
+            foreach (['name', 'email'] as $field) {
+                if ($account->wasChanged($field)) {
+                    $changedFields[] = $field;
+                }
+            }
+
+            if (filled($data['password'] ?? null)) {
+                $changedFields[] = 'password';
+            }
+
+            app(Audit::class)->record('platform', 'staff.account_updated', $account, $request->user(), [], ['changed_fields' => $changedFields]);
+        });
+
+        if ($isEditingOwnAccount && $credentialsChanged) {
+            $request->session()->regenerate();
+        }
+
+        return redirect()->route('admin.staff')->with('status', $credentialsChanged
+            ? 'Account updated. Other active sessions were signed out.'
+            : 'Account details updated.');
     }
 
     public function update(StaffRequest $request, User $user): RedirectResponse
