@@ -7,12 +7,13 @@
             <input type="hidden" name="assignment_id" value="{{ $guest->activeAssignment?->id }}">
             <div class="form-grid">
                 <div><label for="contact_method">Method *</label><select id="contact_method" name="method" required>@foreach(['call' => 'Call', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp', 'visit' => 'Visit', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('method', 'call') === $value)>{{ $label }}</option>@endforeach</select></div>
-                <div><label for="contact_outcome">Outcome *</label><select id="contact_outcome" name="outcome" x-model="outcome" required><option value="NOTE_ONLY">Note only — keep status</option><option value="UNREACHABLE">Unreachable — failed attempt</option><option value="CONTACTED">Contacted — two-way contact</option></select></div>
+                <div><label for="contact_outcome">Outcome *</label><select id="contact_outcome" name="outcome" x-model="outcome" required><option value="NOTE_ONLY">Note only — keep status</option><option value="CONTACTED">Contacted — two-way contact</option><option value="UNREACHABLE">Unreachable — failed attempt</option><option value="WRONG_NUMBER">Wrong number</option></select></div>
                 <div><label for="attempted_at">Actual attempt time (WAT) *</label><input id="attempted_at" name="attempted_at" type="datetime-local" value="{{ old('attempted_at', now()->setTimezone('Africa/Lagos')->format('Y-m-d\TH:i')) }}" required></div>
                 <div><label for="contact_comment">Comment *</label><textarea id="contact_comment" name="comment" maxlength="5000" required>{{ old('comment') }}</textarea></div>
             </div>
             <label class="checkbox-row" x-show="outcome === 'CONTACTED'" x-cloak><input type="checkbox" name="two_way_confirmed" value="1" @checked(old('two_way_confirmed'))>Actual two-way contact took place.</label>
             <label class="checkbox-row" x-show="outcome === 'UNREACHABLE'" x-cloak><input type="checkbox" name="failed_attempt_confirmed" value="1" @checked(old('failed_attempt_confirmed'))>An actual attempt failed to reach the guest.</label>
+            <label class="checkbox-row" x-show="outcome === 'WRONG_NUMBER'" x-cloak><input type="checkbox" name="wrong_number_confirmed" value="1" @checked(old('wrong_number_confirmed'))>I verified that this is the wrong number.</label>
             <p class="muted-text">Earlier dated attempts stay in history. A later dated outcome determines the current status. Notes leave status unchanged.</p>
             <button class="button primary">Save follow-up</button>
         </form>

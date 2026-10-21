@@ -52,9 +52,9 @@ class FollowUpReportController extends Controller
             $headers = ['Metric', 'Value'];
             $rows = collect($reports->summary($actor, $filters))->map(fn ($value, $key) => [$key, $value ?? 'n/a'])->values()->all();
         } elseif ($type === 'officers') {
-            $headers = ['Officer ID', 'Officer', 'Active', 'Currently assigned', 'Current NOT CONTACTED', 'Current CONTACTED', 'Current UNREACHABLE', 'Attempts', 'Distinct attempted', 'Distinct successful', 'Success %', 'Untouched in current assignment and activity period', 'Last activity (UTC)'];
+            $headers = ['Officer ID', 'Officer', 'Active', 'Currently assigned', 'Current NOT CONTACTED', 'Current CONTACTED', 'Current UNREACHABLE', 'Current WRONG NUMBER', 'Attempts', 'Distinct attempted', 'Distinct successful', 'Success %', 'Untouched in current assignment and activity period', 'Last activity (UTC)'];
             $rows = $reports->officers($actor, $filters)->map(fn ($row) => [$row['id'], $row['name'], $row['active'] ? 'Yes' : 'No', $row['assigned'],
-                $row['not_contacted'], $row['contacted'], $row['unreachable'], $row['attempts'], $row['attempted_guests'], $row['successful_guests'],
+                $row['not_contacted'], $row['contacted'], $row['unreachable'], $row['wrong_number'], $row['attempts'], $row['attempted_guests'], $row['successful_guests'],
                 $row['success_rate'] ?? 'n/a', $row['untouched'], $row['last_activity']])->all();
         } else {
             $headers = ['Activity ID', 'Guest ID', 'Guest', 'Encounter date', 'Session', 'Actor', 'Method', 'Attempt time (WAT)', 'Outcome', 'Status before entry', 'Status after entry', 'Comment'];

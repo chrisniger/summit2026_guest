@@ -20,7 +20,7 @@ class FollowUpReports
         return Validator::make($input, [
             'search' => 'nullable|string|max:255', 'year' => 'nullable|integer|min:2000|max:2100',
             'session' => 'nullable|integer|exists:conference_sessions,id', 'day' => 'nullable|integer|min:1|max:31',
-            'status' => 'nullable|in:NOT CONTACTED,CONTACTED,UNREACHABLE',
+            'status' => 'nullable|in:NOT CONTACTED,CONTACTED,UNREACHABLE,WRONG NUMBER',
             'assignment' => 'nullable|in:assigned,unassigned', 'officer' => 'nullable|integer|exists:users,id',
             'source' => 'nullable|in:manual,import', 'archive' => 'nullable|in:active,archived',
             'encounter_from' => 'nullable|date_format:Y-m-d', 'encounter_to' => 'nullable|date_format:Y-m-d'.(! empty($input['encounter_from']) ? '|after_or_equal:encounter_from' : ''),
@@ -111,7 +111,8 @@ class FollowUpReports
         return ['total' => (clone $cohort)->count(), 'assigned' => (clone $cohort)->has('activeAssignment')->count(),
             'unassigned' => (clone $cohort)->doesntHave('activeAssignment')->count(),
             'not_contacted' => (int) ($statuses['NOT CONTACTED'] ?? 0), 'contacted' => (int) ($statuses['CONTACTED'] ?? 0),
-            'unreachable' => (int) ($statuses['UNREACHABLE'] ?? 0), 'attempts' => (clone $attempts)->count(),
+            'unreachable' => (int) ($statuses['UNREACHABLE'] ?? 0), 'wrong_number' => (int) ($statuses['WRONG NUMBER'] ?? 0),
+            'attempts' => (clone $attempts)->count(),
             'attempted_guests' => $attempted, 'successful_guests' => $successful, 'notes' => (clone $activity)->where('outcome', 'NOTE_ONLY')->count(),
             'success_rate' => $attempted ? round(100 * $successful / $attempted, 1) : null];
     }
@@ -157,6 +158,7 @@ class FollowUpReports
             return ['id' => $officer->id, 'name' => $officer->name, 'active' => $officer->is_active,
                 'assigned' => (int) ($workload[$officer->id] ?? 0), 'not_contacted' => (int) ($status['NOT CONTACTED'] ?? 0),
                 'contacted' => (int) ($status['CONTACTED'] ?? 0), 'unreachable' => (int) ($status['UNREACHABLE'] ?? 0),
+                'wrong_number' => (int) ($status['WRONG NUMBER'] ?? 0),
                 'attempts' => (int) ($totals?->attempts ?? 0), 'attempted_guests' => $attempted, 'successful_guests' => $successful,
                 'success_rate' => $attempted ? round(100 * $successful / $attempted, 1) : null,
                 'untouched' => $untouched, 'last_activity' => $totals?->last_activity];

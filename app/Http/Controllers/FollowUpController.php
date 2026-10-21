@@ -28,8 +28,13 @@ class FollowUpController extends Controller
     public function activity(FollowUpActivityRequest $request, GuestRecord $guest, FollowUpContact $contact): RedirectResponse
     {
         $activity = $contact->record($request->user(), $guest, $request->validated());
+        $outcomeStatus = $activity->outcome === 'WRONG_NUMBER' ? 'WRONG NUMBER' : $activity->outcome;
         $message = $activity->outcome === 'NOTE_ONLY' ? 'Note saved. Contact status is unchanged.'
-            : ($activity->new_status === $activity->outcome ? 'Contact attempt saved.' : 'Earlier attempt saved. A later attempt determines the current status.');
+            : ($activity->new_status === $outcomeStatus ? 'Follow-up outcome saved.' : 'Earlier attempt saved. A later attempt determines the current status.');
+
+        if ($request->validated('return_to') === 'list') {
+            return redirect()->route('guests.index', $request->query())->with('status', $message);
+        }
 
         return redirect()->route('guests.show', $guest)->with('status', $message);
     }

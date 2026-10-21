@@ -45,10 +45,11 @@ class FollowUpContact
             }
             abort_unless($guest->version === (int) $data['version'], 409, 'This guest changed. Reload before recording another attempt.');
             $previous = $guest->current_status;
+            $outcomeStatus = $data['outcome'] === 'WRONG_NUMBER' ? 'WRONG NUMBER' : $data['outcome'];
             $latest = FollowUpActivity::where('guest_record_id', $guest->id)->where('outcome', '!=', 'NOTE_ONLY')
                 ->orderByDesc('attempted_at_utc')->orderByDesc('id')->lockForUpdate()->first();
             $applies = $data['outcome'] !== 'NOTE_ONLY' && (! $latest || $instant->greaterThanOrEqualTo($latest->attempted_at_utc));
-            $next = $applies ? $data['outcome'] : $previous;
+            $next = $applies ? $outcomeStatus : $previous;
             $activity = new FollowUpActivity(['guest_record_id' => $guest->id, 'assignment_id' => $assignment?->id,
                 'actor_user_id' => $actor->id, 'method' => $data['method'], 'attempted_at_utc' => $instant,
                 'outcome' => $data['outcome'], 'comment' => $data['comment'], 'previous_status' => $previous, 'new_status' => $next]);

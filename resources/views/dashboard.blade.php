@@ -17,7 +17,7 @@
     </div>
     @if($followUp)
         <section class="panel edit-panel"><h2>{{ $workspace === 'my-guests' ? 'My follow-up progress' : 'Follow-up progress' }}</h2>
-            <div class="follow-up-metrics">@foreach(['assigned' => 'Current assignments', 'not_contacted' => 'NOT CONTACTED', 'contacted' => 'CONTACTED', 'unreachable' => 'UNREACHABLE', 'attempted_guests' => 'Attempted guests'] as $key => $label)<div><strong>{{ $followUp[$key] }}</strong><span>{{ $label }}</span></div>@endforeach<div><strong>{{ $followUp['success_rate'] === null ? 'n/a' : $followUp['success_rate'].'%' }}</strong><span>Contact success</span></div></div>
+            <div class="follow-up-metrics">@foreach(['assigned' => 'Current assignments', 'not_contacted' => 'NOT CONTACTED', 'contacted' => 'CONTACTED', 'unreachable' => 'UNREACHABLE', 'wrong_number' => 'WRONG NUMBER', 'attempted_guests' => 'Attempted guests'] as $key => $label)<div><strong>{{ $followUp[$key] }}</strong><span>{{ $label }}</span></div>@endforeach<div><strong>{{ $followUp['success_rate'] === null ? 'n/a' : $followUp['success_rate'].'%' }}</strong><span>Contact success</span></div></div>
             <p class="muted-text guest-section">Current 2026 guest cohort · all recorded activity in your scope. Contact success uses distinct successful guests divided by distinct attempted guests.</p>
             <div class="button-row guest-section"><a class="button secondary" href="{{ route('follow-up.reports') }}">Open follow-up reports</a>@can('guest.assign')<a class="button primary" href="{{ route('guests.index', ['assignment' => 'unassigned']) }}">Assign guests</a>@endcan</div>
         </section>

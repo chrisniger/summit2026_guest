@@ -15,10 +15,12 @@ class FollowUpActivityRequest extends FormRequest
     {
         return [
             'submission_id' => 'required|uuid', 'assignment_id' => 'nullable|integer|min:1', 'version' => 'required|integer|min:1',
-            'method' => 'required|in:call,sms,whatsapp,visit,other', 'outcome' => 'required|in:CONTACTED,UNREACHABLE,NOTE_ONLY',
+            'method' => 'required|in:call,sms,whatsapp,visit,other', 'outcome' => 'required|in:CONTACTED,UNREACHABLE,WRONG_NUMBER,NOTE_ONLY',
             'attempted_at' => 'required|date_format:Y-m-d\TH:i', 'comment' => 'required|string|max:5000',
             'two_way_confirmed' => 'required_if:outcome,CONTACTED|accepted_if:outcome,CONTACTED',
             'failed_attempt_confirmed' => 'required_if:outcome,UNREACHABLE|accepted_if:outcome,UNREACHABLE',
+            'wrong_number_confirmed' => 'required_if:outcome,WRONG_NUMBER|accepted_if:outcome,WRONG_NUMBER',
+            'return_to' => 'nullable|in:list',
         ];
     }
 

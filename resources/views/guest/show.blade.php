@@ -3,7 +3,7 @@
     <section class="panel edit-panel">
         <div class="button-row"><span class="badge">{{ $guest->current_status }}</span><span class="badge">{{ $guest->activeAssignment ? 'ASSIGNED' : 'UNASSIGNED' }}</span>@if($guest->archived_at)<span class="badge">ARCHIVED</span>@endif</div>
         <dl class="profile-grid guest-profile">
-            <div><dt>Phone</dt><dd><a class="text-link" href="tel:{{ $guest->phone_normalized }}">{{ $guest->phone_raw }}</a></dd></div>
+            <div><dt>Phone</dt><dd>@php($dialablePhone = $guest->phone_normalized ?: \App\Services\PhoneNumber::normalize($guest->phone_raw))@if($dialablePhone)<a class="guest-phone-link" href="tel:{{ $dialablePhone }}" aria-label="Call {{ $guest->full_name }} at {{ $guest->phone_raw }}"><x-icon name="phone"/>{{ $guest->phone_raw }}</a>@else<span class="guest-phone-text"><x-icon name="phone"/>{{ $guest->phone_raw }}</span>@endif</dd></div>
             <div><dt>Assigned officer</dt><dd>{{ $guest->activeAssignment?->officer?->name ?? 'Unassigned' }}</dd></div>
             <div><dt>Gender</dt><dd>{{ $guest->gender ?: 'Not provided' }}</dd></div>
             <div><dt>Home address</dt><dd>{{ $guest->home_address ?: 'Not provided' }}</dd></div>
