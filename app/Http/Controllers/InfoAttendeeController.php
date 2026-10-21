@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\InfoAttendeeRequest;
 use App\Models\InfoAttendee;
 use App\Services\Audit;
+use App\Services\InfoAttendance;
+use App\Services\InfoAttendeeMatcher;
 use App\Services\InfoRegistration;
 use App\Services\PhoneNumber;
 use App\Services\SessionSchedule;
@@ -12,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class InfoAttendeeController extends Controller
@@ -47,11 +50,18 @@ class InfoAttendeeController extends Controller
         return view('info.attendee-form', ['attendee' => $attendee, 'submissionId' => Str::uuid()]);
     }
 
-    public function update(InfoAttendeeRequest $request, InfoAttendee $attendee): RedirectResponse
+    public function update(InfoAttendeeRequest $request, InfoAttendee $attendee, InfoAttendeeMatcher $attendeeMatcher, InfoAttendance $attendance): RedirectResponse
     {
         Gate::authorize('update', $attendee);
         $data = $request->safe()->except('submission_id');
-        DB::transaction(function () use ($data, $attendee, $request) {
+
+        DB::transaction(function () use ($data, $attendee, $request, $attendeeMatcher, $attendance) {
+            $attendance->lockConference();
+
+            if ($attendeeMatcher->findExactMatch($data, $attendee->id)) {
+                throw ValidationException::withMessages(['phone_raw' => 'Another attendee already has this exact name and phone number. Use the existing attendee instead.']);
+            }
+
             $attendee->fill([...$data, 'phone_normalized' => PhoneNumber::normalize($data['phone_raw'])]);
             $changed = array_keys($attendee->getDirty());
             $attendee->save();

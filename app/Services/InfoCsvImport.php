@@ -28,14 +28,11 @@ class InfoCsvImport
 
     private const MAP = ['First Name' => 'first_name', 'Surname' => 'last_name', 'Phone' => 'phone_raw', 'Email' => 'email', 'Member' => 'member', 'Summit Centre' => 'summit_centre', 'Commits to Invite' => 'commits_to_invite', 'Invite Count' => 'invite_count', 'Location' => 'location', 'Abuja Area' => 'abuja_area', 'First Time' => 'first_time', 'Bus Shuttle' => 'bus_shuttle', 'Bus Route' => 'bus_route', 'Attendance' => 'attendance_preference', 'Heard About' => 'heard_about', 'Feedback' => 'feedback', 'Consent' => 'consent'];
 
+    public function __construct(private InfoAttendeeMatcher $attendeeMatcher) {}
+
     public function candidates(array $data): Builder
     {
-        return InfoAttendee::where(function ($query) use ($data) {
-            $query->where('phone_normalized', PhoneNumber::normalize($data['phone_raw'] ?? ''));
-            if (! empty($data['first_name']) && ! empty($data['last_name'])) {
-                $query->orWhere(fn ($name) => $name->where('first_name', $data['first_name'])->where('last_name', $data['last_name']));
-            }
-        });
+        return $this->attendeeMatcher->candidates($data);
     }
 
     public function preview(User $actor, UploadedFile $file): InfoImportBatch
@@ -59,6 +56,7 @@ class InfoCsvImport
         $seen = [];
         $seenPhones = [];
         $seenNames = [];
+        $seenIdentities = [];
         $rowNumber = 1;
         try {
             while (($values = fgetcsv($stream, null, ',', '"', '')) !== false) {
@@ -113,12 +111,19 @@ class InfoCsvImport
                     $classification = 'duplicate';
                 } else {
                     $phone = PhoneNumber::normalize($data['phone_raw']);
-                    $name = mb_strtolower($data['first_name'].' '.$data['last_name']);
-                    if (isset($seenPhones[$phone]) || isset($seenNames[$name]) || $this->candidates($data)->exists()) {
+                    $name = $this->attendeeMatcher->normalizeName($data['first_name'].' '.$data['last_name']);
+                    $identityKey = $this->attendeeMatcher->identityKey($data);
+                    $candidates = $this->attendeeMatcher->candidates($data)->get();
+                    $exactMatch = $candidates->first(fn (InfoAttendee $attendee): bool => $this->attendeeMatcher->matches($attendee, $data));
+
+                    if (isset($seenIdentities[$identityKey]) || $exactMatch !== null) {
+                        $classification = 'duplicate';
+                    } elseif (isset($seenPhones[$phone]) || isset($seenNames[$name]) || $candidates->isNotEmpty()) {
                         $classification = 'review';
                     }
                     $seenPhones[$phone] = true;
                     $seenNames[$name] = true;
+                    $seenIdentities[$identityKey] = true;
                 }
                 $seen[$fingerprint] = true;
                 $rows[] = ['row_number' => $rowNumber, 'raw_json' => $raw, 'normalized_json' => $data, 'row_fingerprint' => $fingerprint,
@@ -181,7 +186,9 @@ class InfoCsvImport
                 return;
             }
             abort_unless(in_array($batch->status, ['previewed', 'failed'], true), 409, 'Preview this import first.');
-            $batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->update(['classification' => 'new']);
+            if ($batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->exists()) {
+                throw ValidationException::withMessages(['confirm' => 'Choose Create, Match, or Skip for every possible duplicate before confirming the import.']);
+            }
             $this->summarize($batch);
             $batch->update(['status' => 'processing', 'failure_message' => null]);
             app(Audit::class)->record('info_com', 'import.committed', $batch, $actor);

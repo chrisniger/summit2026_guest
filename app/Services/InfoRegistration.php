@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class InfoRegistration
 {
+    public function __construct(private InfoAttendeeMatcher $attendeeMatcher) {}
+
     public function register(?User $actor, array $data, CarbonInterface $instant, string $fingerprint, string $source = 'onsite', ?int $rowId = null, ?int $existingId = null): array
     {
         if ($actor) {
@@ -26,14 +28,16 @@ class InfoRegistration
             if ($previous) {
                 return ['attendee' => $previous->attendee, 'attendance' => null, 'reason' => 'Registration already saved.', 'replayed' => true, 'created' => false];
             }
+            $matchedAttendee = $existingId === null ? $this->attendeeMatcher->findExactMatch($data) : null;
+            $created = $existingId === null && $matchedAttendee === null;
             $attendee = $existingId
                 ? InfoAttendee::whereKey($existingId)->lockForUpdate()->firstOrFail()
-                : InfoAttendee::create([...$data, 'phone_normalized' => PhoneNumber::normalize($data['phone_raw']),
-                    'registration_original_at_utc' => $instant->copy()->utc(), 'registration_source' => $source, 'created_by_user_id' => $actor?->id]);
+                : ($matchedAttendee ?? InfoAttendee::create([...$data, 'phone_normalized' => PhoneNumber::normalize($data['phone_raw']),
+                    'registration_original_at_utc' => $instant->copy()->utc(), 'registration_source' => $source, 'created_by_user_id' => $actor?->id]));
             $event = InfoRegistrationEvent::create(['info_attendee_id' => $attendee->id, 'source' => in_array($source, ['onsite', 'csv'], true) ? $source : 'onsite',
                 'registered_at_utc' => $instant->copy()->utc(), 'created_by_user_id' => $actor?->id,
                 'import_row_id' => $rowId, 'source_fingerprint' => $fingerprint]);
-            if ($existingId && $instant->lt($attendee->registration_original_at_utc ?? $attendee->created_at)) {
+            if (! $created && $instant->lt($attendee->registration_original_at_utc ?? $attendee->created_at)) {
                 $attendee->update(['registration_original_at_utc' => $instant->copy()->utc()]);
             }
             $session = app(SessionSchedule::class)->activeAt($instant);
@@ -44,9 +48,12 @@ class InfoRegistration
                 $result = $attendance->record($actor, $attendee, $session, $instant, $source === 'csv' ? 'csv_auto' : 'registration_auto', $event, $rowId);
                 $reason = $result['already_present'] ? 'Already present for '.$session->label.'.' : 'Automatically checked in to '.$session->label.'.';
             }
+            if ($matchedAttendee !== null) {
+                $reason = 'The exact name and phone already exist, so the existing attendee was kept. '.$reason;
+            }
             app(Audit::class)->record('info_com', $result ? 'registration.saved' : 'registration.without_attendance', $event, $actor, [], ['source' => $source, 'reason' => $reason]);
 
-            return ['attendee' => $attendee, 'attendance' => $result, 'reason' => $reason, 'replayed' => false, 'created' => $existingId === null];
+            return ['attendee' => $attendee, 'attendance' => $result, 'reason' => $reason, 'replayed' => false, 'created' => $created];
         }, 3);
     }
 }

@@ -6,6 +6,7 @@ use App\Models\InfoImportBatch;
 use App\Models\User;
 use App\Services\Audit;
 use App\Services\InfoAttendance;
+use App\Services\InfoAttendeeMatcher;
 use App\Services\InfoCsvImport;
 use App\Services\InfoRegistration;
 use Carbon\CarbonImmutable;
@@ -36,6 +37,7 @@ class CommitInfoImport implements ShouldQueue
                 }
                 $actor = User::findOrFail($this->actorId);
                 Gate::forUser($actor)->authorize('info.import');
+                $attendeeMatcher = app(InfoAttendeeMatcher::class);
                 $rows = $batch->rows()->where('processing_state', 'pending')->orderBy('id')->limit(100)->lockForUpdate()->get();
                 foreach ($rows as $row) {
                     if ($row->classification === 'skip') {
@@ -45,6 +47,24 @@ class CommitInfoImport implements ShouldQueue
                     }
                     abort_unless(in_array($row->classification, ['new', 'match'], true), 409, 'Row requires review.');
                     $data = $row->normalized_json;
+
+                    if ($row->classification === 'new') {
+                        $candidates = $attendeeMatcher->candidates($data)->get();
+                        $exactMatch = $candidates->first(fn ($candidate): bool => $attendeeMatcher->matches($candidate, $data));
+
+                        if ($exactMatch !== null) {
+                            $row->update(['info_attendee_id' => $exactMatch->id, 'processing_state' => 'duplicate']);
+
+                            continue;
+                        }
+
+                        if ($candidates->isNotEmpty()) {
+                            $row->update(['classification' => 'review']);
+
+                            continue;
+                        }
+                    }
+
                     $instant = CarbonImmutable::parse($data['_original_at']);
                     unset($data['_original_at']);
                     $data['raw_source_json'] = $row->raw_json;
@@ -53,7 +73,12 @@ class CommitInfoImport implements ShouldQueue
                         'processing_state' => $result['replayed'] ? 'duplicate' : ($result['created'] ? 'created' : 'matched')]);
                 }
                 app(InfoCsvImport::class)->summarize($batch);
-                if ($batch->rows()->where('processing_state', 'pending')->exists()) {
+                if ($batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->exists()) {
+                    $batch->update([
+                        'status' => 'failed',
+                        'failure_message' => 'Possible duplicate rows were found during processing. Review each row and choose Create, Match, or Skip, then retry the remaining rows.',
+                    ]);
+                } elseif ($batch->rows()->where('processing_state', 'pending')->exists()) {
                     self::dispatch($batch->id, $actor->id)->onQueue('imports')->beforeCommit();
                 } else {
                     $batch->update(['status' => 'completed']);

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InfoAttendee;
 use App\Services\InfoAttendance;
+use App\Services\InfoAttendeeMatcher;
 use App\Services\InfoRegistration;
 use App\Services\PhoneNumber;
 use App\Services\SessionSchedule;
@@ -18,7 +18,7 @@ class PublicAttendanceController extends Controller
         return view('info.public-attendance', ['session' => $schedule->activeAt(now())]);
     }
 
-    public function store(Request $request, SessionSchedule $schedule, InfoRegistration $registration, InfoAttendance $attendance): RedirectResponse
+    public function store(Request $request, SessionSchedule $schedule, InfoRegistration $registration, InfoAttendance $attendance, InfoAttendeeMatcher $attendeeMatcher): RedirectResponse
     {
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -37,7 +37,7 @@ class PublicAttendanceController extends Controller
         }
 
         $name = trim($data['first_name']).' '.trim($data['last_name']);
-        $attendee = $this->matchAttendee($data['phone_raw']);
+        $attendee = $attendeeMatcher->findExactMatch($data);
 
         if (! $attendee) {
             $attendee = $registration->register(
@@ -52,14 +52,5 @@ class PublicAttendanceController extends Controller
         $attendance->selfService($attendee, $session, now());
 
         return redirect()->route('attendance.public')->with('status', 'Welcome to SUMMIT 2026, '.$name.'. You are marked present.');
-    }
-
-    private function matchAttendee(string $phone): ?InfoAttendee
-    {
-        $normalized = PhoneNumber::normalize($phone);
-        $lastSixDigits = substr(preg_replace('/\D/', '', (string) $normalized), -6);
-
-        return InfoAttendee::where('phone_normalized', $normalized)->latest('id')->first()
-            ?? InfoAttendee::where('phone_normalized', 'like', '%'.$lastSixDigits)->latest('id')->first();
     }
 }
