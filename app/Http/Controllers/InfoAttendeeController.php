@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InfoAttendeeRequest;
+use App\Models\ConferenceSession;
 use App\Models\InfoAttendee;
 use App\Services\Audit;
 use App\Services\InfoAttendance;
@@ -23,15 +24,20 @@ class InfoAttendeeController extends Controller
     {
         Gate::authorize('create', InfoAttendee::class);
 
-        return view('info.attendee-form', ['attendee' => null, 'submissionId' => Str::uuid()]);
+        return view('info.attendee-form', ['attendee' => null, 'submissionId' => Str::uuid(),
+            'registrationSessions' => ConferenceSession::currentConference()->whereNull('attendance_locked_at')
+                ->whereDate('date_local', '<=', now(config('summit.timezone'))->toDateString())
+                ->where(fn ($query) => $query->whereNull('starts_at_utc')->orWhere('starts_at_utc', '<=', now()))
+                ->orderByDesc('date_local')->orderBy('id')->get()]);
     }
 
     public function store(InfoAttendeeRequest $request, InfoRegistration $registration): RedirectResponse
     {
         $data = $request->validated();
         $token = $data['submission_id'];
-        unset($data['submission_id']);
-        $result = $registration->register($request->user(), $data, now(), hash('sha256', 'onsite:'.$request->user()->id.':'.$token));
+        $attendanceSessionId = isset($data['attendance_session_id']) ? (int) $data['attendance_session_id'] : null;
+        unset($data['submission_id'], $data['other_session'], $data['attendance_session_id']);
+        $result = $registration->register($request->user(), $data, now(), hash('sha256', 'onsite:'.$request->user()->id.':'.$token), attendanceSessionId: $attendanceSessionId);
 
         return redirect()->route('info.attendees.show', $result['attendee'])->with('status', 'Registration saved. '.$result['reason']);
     }

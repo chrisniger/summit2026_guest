@@ -167,6 +167,41 @@ class GuestCaptureTest extends TestCase
         $this->get(route('guests.show', $other))->assertForbidden();
     }
 
+    public function test_follow_up_admin_can_delete_a_guest_without_erasing_its_history(): void
+    {
+        $admin = $this->userWithRole('follow_up_admin');
+        $officer = $this->userWithRole('officer');
+        $guest = GuestRecord::factory()->create(['full_name' => 'Guest to delete']);
+        $this->assign($guest, $officer);
+
+        $this->actingAs($admin)->get(route('guests.index'))
+            ->assertOk()->assertSee('Guest to delete')->assertSee('Delete guest record for Guest to delete');
+        $this->delete(route('guests.destroy', ['guest' => $guest, 'search' => 'Guest to delete']))
+            ->assertRedirect(route('guests.index', ['search' => 'Guest to delete']))
+            ->assertSessionHas('status', 'Guest record deleted.');
+
+        $this->assertSoftDeleted('guest_records', ['id' => $guest->id]);
+        $this->assertDatabaseHas('follow_up_assignments', ['guest_record_id' => $guest->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'guest.deleted', 'actor_user_id' => $admin->id, 'subject_id' => $guest->id]);
+        $this->get(route('guests.index'))->assertOk()->assertDontSee('Guest to delete');
+        $this->get(route('guests.show', $guest))->assertNotFound();
+    }
+
+    public function test_data_entry_and_officer_cannot_delete_guest_records(): void
+    {
+        $entry = $this->userWithRole('data_entry');
+        $guest = GuestRecord::factory()->create(['created_by_user_id' => $entry->id]);
+
+        $this->actingAs($entry)->get(route('guests.index'))->assertOk()
+            ->assertDontSee('Delete guest record for '.$guest->full_name);
+        $this->delete(route('guests.destroy', $guest))->assertForbidden();
+
+        $officer = $this->userWithRole('officer');
+        $this->assign($guest, $officer);
+        $this->actingAs($officer)->delete(route('guests.destroy', $guest))->assertForbidden();
+        $this->assertNull($guest->fresh()->deleted_at);
+    }
+
     private function assign(GuestRecord $guest, User $officer): void
     {
         FollowUpAssignment::create(['guest_record_id' => $guest->id, 'officer_user_id' => $officer->id,

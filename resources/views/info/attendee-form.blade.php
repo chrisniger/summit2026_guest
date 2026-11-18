@@ -11,6 +11,22 @@
 @endforeach
 <div><label for="heard_about">How did you hear about the conference?</label><select id="heard_about" name="heard_about"><option value="">Not specified</option>@php($referral = old('heard_about',$attendee?->heard_about))@if($referral && !in_array($referral,config('summit.referral_options'),true))<option value="{{ $referral }}" selected>{{ $referral }}</option>@endif @foreach(config('summit.referral_options') as $option)<option value="{{ $option }}" @selected($referral===$option)>{{ $option }}</option>@endforeach</select></div>
 </div>
+@unless($attendee)
+<fieldset x-data="{ otherSession: @js((bool) old('other_session', false)) }">
+    <legend>Attendance session</legend>
+    <label class="checkbox-row"><input type="checkbox" name="other_session" value="1" x-model="otherSession" @checked(old('other_session'))> Other Session</label>
+    <p class="muted-text">Use this for paper registrations captured later. Leave unchecked to use the current active session.</p>
+    <div x-show="otherSession" x-cloak style="margin-top:12px">
+        <label for="attendance_session_id">Session to mark present *</label>
+        <select id="attendance_session_id" name="attendance_session_id" :disabled="!otherSession" :required="otherSession">
+            <option value="">Select the session attended</option>
+            @foreach($registrationSessions as $registrationSession)<option value="{{ $registrationSession->id }}" @selected((string) old('attendance_session_id') === (string) $registrationSession->id)>{{ $registrationSession->date_local->format('d M Y') }} · {{ $registrationSession->label }}</option>@endforeach
+        </select>
+        <small>Attendance is recorded only for the selected session. Locked and future sessions are unavailable.</small>
+        @if($registrationSessions->isEmpty())<p class="muted-text">No past or current unlocked sessions are available yet.</p>@endif
+    </div>
+</fieldset>
+@endunless
 <details class="additional-details"><summary>Additional registration details (optional)</summary><div class="form-grid">
 @foreach(['commits_to_invite'=>'Commits to invite?','bus_shuttle'=>'Bus shuttle required?'] as $field=>$label)
 <div><label for="{{ $field }}">{{ $label }}</label><select id="{{ $field }}" name="{{ $field }}"><option value="">Not answered</option><option value="1" @selected((string)old($field,$attendee?->$field===null?'':(int)$attendee->$field)==='1')>Yes</option><option value="0" @selected((string)old($field,$attendee?->$field===null?'':(int)$attendee->$field)==='0')>No</option></select></div>

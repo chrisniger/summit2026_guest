@@ -1,6 +1,9 @@
 <x-layout title="Guest records">
     <div class="page-heading"><div><p class="eyebrow">GUEST SERVICE</p><h1>Guest records</h1><p>Browse the encounters available to your role.</p></div>
-        @can('create', \App\Models\GuestRecord::class)<a class="button primary" href="{{ route('guests.create') }}"><x-icon name="edit" /> Enter guest</a>@endcan
+        <div class="button-row">
+            @can('create', \App\Models\GuestRecord::class)<a class="button primary" href="{{ route('guests.create') }}"><x-icon name="edit" /> Enter guest</a>@endcan
+            @can('workspace.super_admin')<a class="button secondary" href="{{ route('admin.exports.download', 'guests') }}">Download full guest data</a>@endcan
+        </div>
     </div>
     <details class="panel filter-panel">
         <summary class="filter-panel-summary"><x-icon name="filter"/><span><strong>Filter guest records</strong><small>Search and narrow the guest list · {{ $guests->total() }} matching encounters</small></span><span class="filter-panel-control"><span class="filter-open-label">Show filters</span><span class="filter-close-label">Hide filters</span><x-icon name="chevron"/></span></summary>
@@ -56,7 +59,17 @@
                         </details>
                     @endunless
                 @endcan
-                <div class="button-row"><a class="button secondary small" href="{{ route('guests.show', $guest) }}">View guest</a>@can('update', $guest)<a class="button secondary small" href="{{ route('guests.edit', $guest) }}">Edit details</a>@endcan</div>
+                <div class="button-row">
+                    <a class="button secondary small" href="{{ route('guests.show', $guest) }}">View guest</a>
+                    @can('update', $guest)<a class="button secondary small" href="{{ route('guests.edit', $guest) }}">Edit details</a>@endcan
+                    @can('delete', $guest)
+                        <form method="POST" action="{{ route('guests.destroy', ['guest' => $guest] + request()->query()) }}" onsubmit="return confirm('Delete this guest record? It will be removed from guest lists and reports.');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="button secondary small" type="submit" aria-label="Delete guest record for {{ $guest->full_name }}">Delete</button>
+                        </form>
+                    @endcan
+                </div>
             </article>
         @empty
             <div class="panel empty-state"><x-icon name="people" /><strong>No guests match these filters</strong><p>Try another name, phone, session or event year.</p></div>

@@ -27,6 +27,12 @@ class GuestRecordPolicy
         return $this->create($user) && $this->view($user, $guest);
     }
 
+    public function delete(User $user, GuestRecord $guest): bool
+    {
+        return ($user->hasRole('super_admin') || $user->hasRole('follow_up_admin'))
+            && $this->view($user, $guest);
+    }
+
     public function contact(User $user, GuestRecord $guest): bool
     {
         return $user->hasPermission('guest.contact') && $this->view($user, $guest);

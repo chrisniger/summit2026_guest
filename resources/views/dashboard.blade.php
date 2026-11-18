@@ -15,6 +15,18 @@
         <section class="panel domain-panel"><div class="panel-heading"><div class="domain-icon red"><x-icon name="heart" /></div><span class="eyebrow">GUEST SERVICE</span><span class="badge muted">{{ $workspace === 'my-guests' ? 'Assigned to you' : ($workspace === 'guest-entry' ? 'Your entries' : 'Guest follow-up') }}</span></div><h2>Keep every connection going.</h2><p class="muted-text">Guest capture and follow-up, organized by conference session.</p><div class="metric-row"><div><strong>{{ number_format($guests['total']) }}</strong><span>{{ $workspace === 'my-guests' ? 'Your assigned guests' : ($workspace === 'guest-entry' ? 'Your guest entries' : 'Guest records') }}</span></div><div><strong>{{ number_format($guests['contacted']) }}</strong><span>Contacted</span></div>@if($workspace !== 'my-guests')<div><strong>{{ number_format($guests['unassigned']) }}</strong><span>Unassigned</span></div>@endif</div><div class="empty-state compact"><x-icon name="heart" /><strong>{{ $guests['total'] ? 'Guest records available' : ($workspace === 'my-guests' ? 'No guests assigned yet' : 'A place for every guest') }}</strong><div class="button-row"><a class="button secondary" href="{{ route('guests.index') }}">Browse guests</a>@can('create', \App\Models\GuestRecord::class)<a class="button primary" href="{{ route('guests.create') }}">Enter guest</a>@endcan</div></div></section>
     @endif
     </div>
+    @if($workspace === 'admin')
+        <section class="panel edit-panel">
+            <h2>Download complete records</h2>
+            <p class="muted-text">Super Admin only · All years and records. Registration downloads include entries made through the public attendance page.</p>
+            <div class="button-row">
+                <a class="button secondary" href="{{ route('admin.exports.download', 'guests') }}">Full guest data</a>
+                <a class="button secondary" href="{{ route('admin.exports.download', 'registrations') }}">Full registration data</a>
+                <a class="button secondary" href="{{ route('admin.exports.download', 'registration-events') }}">Registration entry history</a>
+                <a class="button secondary" href="{{ route('admin.exports.download', 'attendance') }}">Full attendance data</a>
+            </div>
+        </section>
+    @endif
     @if($followUp)
         <section class="panel edit-panel"><h2>{{ $workspace === 'my-guests' ? 'My follow-up progress' : 'Follow-up progress' }}</h2>
             <div class="follow-up-metrics">@foreach(['assigned' => 'Current assignments', 'not_contacted' => 'NOT CONTACTED', 'contacted' => 'CONTACTED', 'unreachable' => 'UNREACHABLE', 'wrong_number' => 'WRONG NUMBER', 'attempted_guests' => 'Attempted guests'] as $key => $label)<div><strong>{{ $followUp[$key] }}</strong><span>{{ $label }}</span></div>@endforeach<div><strong>{{ $followUp['success_rate'] === null ? 'n/a' : $followUp['success_rate'].'%' }}</strong><span>Contact success</span></div></div>

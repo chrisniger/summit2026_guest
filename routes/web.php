@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDataExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FollowUpController;
@@ -68,6 +69,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/guests/{guest}/activities', [FollowUpController::class, 'activity'])->middleware('throttle:60,1')->name('follow-up.activities.store');
         Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])->name('guests.edit');
         Route::patch('/guests/{guest}', [GuestController::class, 'update'])->middleware('throttle:120,1')->name('guests.update');
+        Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->middleware('throttle:60,1')->name('guests.destroy');
         Route::middleware('can:guest.import')->prefix('imports')->name('guest-imports.')->group(function () {
             Route::get('/', [GuestImportController::class, 'index'])->name('index');
             Route::post('/', [GuestImportController::class, 'store'])->middleware('throttle:10,1')->name('store');
@@ -82,6 +84,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/access-denied', fn () => response()->view('errors.403', [], 403))->name('access-denied');
     Route::middleware('can:platform.manage')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/exports/{type}', [AdminDataExportController::class, 'download'])->middleware('can:workspace.super_admin')->name('exports.download');
         Route::view('/sessions', 'admin.sessions')->name('sessions');
         Route::get('/staff', [StaffController::class, 'index'])->name('staff');
         Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');

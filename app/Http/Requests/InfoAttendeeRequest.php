@@ -38,6 +38,12 @@ class InfoAttendeeRequest extends FormRequest
 
     public function rules(): array
     {
-        return [...self::fields(), 'submission_id' => 'required|uuid'];
+        $rules = [...self::fields(), 'submission_id' => 'required|uuid'];
+        if ($this->isMethod('POST')) {
+            $rules['other_session'] = 'nullable|boolean';
+            $rules['attendance_session_id'] = 'exclude_unless:other_session,1|required|integer|exists:conference_sessions,id';
+        }
+
+        return $rules;
     }
 }

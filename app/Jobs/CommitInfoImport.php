@@ -49,8 +49,7 @@ class CommitInfoImport implements ShouldQueue
                     $data = $row->normalized_json;
 
                     if ($row->classification === 'new') {
-                        $candidates = $attendeeMatcher->candidates($data)->get();
-                        $exactMatch = $candidates->first(fn ($candidate): bool => $attendeeMatcher->matches($candidate, $data));
+                        $exactMatch = $attendeeMatcher->findExactMatch($data);
 
                         if ($exactMatch !== null) {
                             $row->update(['info_attendee_id' => $exactMatch->id, 'processing_state' => 'duplicate']);
@@ -58,11 +57,6 @@ class CommitInfoImport implements ShouldQueue
                             continue;
                         }
 
-                        if ($candidates->isNotEmpty()) {
-                            $row->update(['classification' => 'review']);
-
-                            continue;
-                        }
                     }
 
                     $instant = CarbonImmutable::parse($data['_original_at']);
@@ -73,12 +67,7 @@ class CommitInfoImport implements ShouldQueue
                         'processing_state' => $result['replayed'] ? 'duplicate' : ($result['created'] ? 'created' : 'matched')]);
                 }
                 app(InfoCsvImport::class)->summarize($batch);
-                if ($batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->exists()) {
-                    $batch->update([
-                        'status' => 'failed',
-                        'failure_message' => 'Possible duplicate rows were found during processing. Review each row and choose Create, Match, or Skip, then retry the remaining rows.',
-                    ]);
-                } elseif ($batch->rows()->where('processing_state', 'pending')->exists()) {
+                if ($batch->rows()->where('processing_state', 'pending')->exists()) {
                     self::dispatch($batch->id, $actor->id)->onQueue('imports')->beforeCommit();
                 } else {
                     $batch->update(['status' => 'completed']);

@@ -141,7 +141,7 @@ class InfoImportTest extends TestCase
         $attendee = InfoAttendee::factory()->create(['first_name' => 'Trusted', 'phone_normalized' => '+2348012345678']);
         $batch = app(InfoCsvImport::class)->preview($actor, $this->file([$this->row()]));
         $row = $batch->rows()->first();
-        $this->assertSame('review', $row->classification);
+        $this->assertSame('new', $row->classification);
         $this->actingAs($actor)->post('/info-com/imports/'.$batch->id.'/rows/'.$row->id, ['decision' => 'match', 'attendee_id' => $attendee->id])->assertSessionHasNoErrors();
         app(InfoCsvImport::class)->commit($actor, $batch);
         $this->assertDatabaseCount('info_attendees', 1);
@@ -155,12 +155,51 @@ class InfoImportTest extends TestCase
         $first = $this->row();
         $batch = app(InfoCsvImport::class)->preview($actor, $this->file([$first, $first, $this->row(['First Name' => 'Jane'])]));
         $rows = $batch->rows()->orderBy('row_number')->get();
-        $this->assertSame(['new', 'duplicate', 'review'], $rows->pluck('classification')->all());
-        app(InfoCsvImport::class)->resolve($actor, $batch, $rows[2], 'new', null);
+        $this->assertSame(['new', 'duplicate', 'new'], $rows->pluck('classification')->all());
         app(InfoCsvImport::class)->commit($actor, $batch);
         $this->assertDatabaseCount('info_attendees', 2);
         $this->assertSame(1, $batch->fresh()->rows_skipped);
         $this->assertSame(0, $batch->fresh()->rows_review);
+    }
+
+    public function test_partial_name_or_phone_matches_import_without_review(): void
+    {
+        $actor = $this->userWithRole('super_admin');
+        InfoAttendee::factory()->create(['first_name' => 'Mike', 'last_name' => 'CSV Test', 'phone_normalized' => '+2348012345678']);
+        $batch = app(InfoCsvImport::class)->preview($actor, $this->file([
+            $this->row(['First Name' => 'Jane']),
+            $this->row(['Phone' => '08099999999']),
+        ]));
+        $this->assertSame(['new', 'new'], $batch->rows()->orderBy('id')->pluck('classification')->all());
+        $this->assertSame(0, $batch->rows_review);
+        app(InfoCsvImport::class)->commit($actor, $batch);
+        $this->assertSame('completed', $batch->fresh()->status);
+        $this->assertSame(2, $batch->fresh()->rows_created);
+        $this->assertDatabaseCount('info_attendees', 3);
+    }
+
+    public function test_existing_preview_review_rows_are_accepted_but_new_exact_matches_are_skipped(): void
+    {
+        Queue::fake();
+        $actor = $this->userWithRole('super_admin');
+        $importer = app(InfoCsvImport::class);
+        $batch = $importer->preview($actor, $this->file([
+            $this->row(), $this->row(['First Name' => 'Jane']),
+            $this->row(['Phone' => '08099999999']),
+            $this->row(['First Name' => 'Skip this']),
+        ]));
+        $batch->rows()->update(['classification' => 'review']);
+        $skip = $batch->rows()->orderByDesc('id')->firstOrFail();
+        $importer->resolve($actor, $batch, $skip, 'skip', null);
+        $this->assertSame(3, $batch->fresh()->rows_review);
+        InfoAttendee::factory()->create(['first_name' => 'Mike', 'last_name' => 'CSV Test', 'phone_normalized' => '+2348012345678']);
+        $this->actingAs($actor)->post('/info-com/imports/'.$batch->id.'/commit', ['confirm' => 1])->assertSessionHasNoErrors();
+        (new CommitInfoImport($batch->id, $actor->id))->handle();
+        $this->assertSame('completed', $batch->fresh()->status);
+        $this->assertSame(2, $batch->fresh()->rows_created);
+        $this->assertSame(2, $batch->fresh()->rows_skipped);
+        $this->assertSame(0, $batch->fresh()->rows_review);
+        $this->assertDatabaseCount('info_attendees', 3);
     }
 
     public function test_existing_attendee_with_same_name_and_phone_is_skipped_as_a_duplicate(): void
@@ -199,7 +238,7 @@ class InfoImportTest extends TestCase
         $actor = $this->userWithRole('super_admin');
         $rows = [];
         for ($i = 0; $i < 105; $i++) {
-            $rows[] = $this->row(['First Name' => 'Person'.$i, 'Surname' => 'Batch'.$i, 'Phone' => '+447'.str_pad((string) $i, 9, '0', STR_PAD_LEFT)]);
+            $rows[] = $this->row(['First Name' => 'Person'.$i, 'Surname' => 'Batch'.$i, 'Phone' => '08012345678']);
         }
         $batch = app(InfoCsvImport::class)->preview($actor, $this->file($rows));
         app(InfoCsvImport::class)->commit($actor, $batch);

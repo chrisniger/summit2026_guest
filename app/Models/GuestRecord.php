@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GuestRecord extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['conference_session_id', 'full_name', 'first_name', 'last_name', 'phone_raw', 'phone_normalized', 'gender', 'home_address', 'heard_about', 'captured_at_original_utc', 'entry_notes', 'created_by_user_id', 'import_row_id', 'legacy_officer_name', 'raw_source_json'];
 

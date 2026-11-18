@@ -54,8 +54,6 @@ class InfoCsvImport
         }
         $rows = [];
         $seen = [];
-        $seenPhones = [];
-        $seenNames = [];
         $seenIdentities = [];
         $rowNumber = 1;
         try {
@@ -110,19 +108,12 @@ class InfoCsvImport
                 } elseif (isset($seen[$fingerprint]) || InfoRegistrationEvent::where('source_fingerprint', $fingerprint)->exists()) {
                     $classification = 'duplicate';
                 } else {
-                    $phone = PhoneNumber::normalize($data['phone_raw']);
-                    $name = $this->attendeeMatcher->normalizeName($data['first_name'].' '.$data['last_name']);
                     $identityKey = $this->attendeeMatcher->identityKey($data);
-                    $candidates = $this->attendeeMatcher->candidates($data)->get();
-                    $exactMatch = $candidates->first(fn (InfoAttendee $attendee): bool => $this->attendeeMatcher->matches($attendee, $data));
+                    $exactMatch = $this->attendeeMatcher->findExactMatch($data);
 
                     if (isset($seenIdentities[$identityKey]) || $exactMatch !== null) {
                         $classification = 'duplicate';
-                    } elseif (isset($seenPhones[$phone]) || isset($seenNames[$name]) || $candidates->isNotEmpty()) {
-                        $classification = 'review';
                     }
-                    $seenPhones[$phone] = true;
-                    $seenNames[$name] = true;
                     $seenIdentities[$identityKey] = true;
                 }
                 $seen[$fingerprint] = true;
@@ -186,9 +177,7 @@ class InfoCsvImport
                 return;
             }
             abort_unless(in_array($batch->status, ['previewed', 'failed'], true), 409, 'Preview this import first.');
-            if ($batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->exists()) {
-                throw ValidationException::withMessages(['confirm' => 'Choose Create, Match, or Skip for every possible duplicate before confirming the import.']);
-            }
+            $batch->rows()->where('processing_state', 'pending')->where('classification', 'review')->update(['classification' => 'new']);
             $this->summarize($batch);
             $batch->update(['status' => 'processing', 'failure_message' => null]);
             app(Audit::class)->record('info_com', 'import.committed', $batch, $actor);

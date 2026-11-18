@@ -30,7 +30,10 @@ class InfoReports
 
     public function eligible(Builder $base, ConferenceSession $session): Builder
     {
-        return (clone $base)->whereRaw('COALESCE(registration_original_at_utc, created_at) <= ?', [$this->cutoff($session)]);
+        return (clone $base)->where(function (Builder $query) use ($session): void {
+            $query->whereRaw('COALESCE(registration_original_at_utc, created_at) <= ?', [$this->cutoff($session)])
+                ->orWhereHas('attendanceRecords', fn ($attendance) => $attendance->where('conference_session_id', $session->id)->whereNull('voided_at'));
+        });
     }
 
     public function build(array $filters): array

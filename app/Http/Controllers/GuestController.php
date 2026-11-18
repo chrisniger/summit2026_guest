@@ -6,11 +6,13 @@ use App\Http\Requests\GuestRequest;
 use App\Models\ConferenceEvent;
 use App\Models\ConferenceSession;
 use App\Models\GuestRecord;
+use App\Services\Audit;
 use App\Services\FollowUpAssignments;
 use App\Services\FollowUpReports;
 use App\Services\GuestCapture;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -93,5 +95,20 @@ class GuestController extends Controller
         $capture->update($request->user(), $guest, $request->validated(), (int) $request->validated('version'), $request->boolean('keep_separate'));
 
         return redirect()->route('guests.show', $guest)->with('status', 'Guest details updated.');
+    }
+
+    public function destroy(Request $request, GuestRecord $guest, Audit $audit): RedirectResponse
+    {
+        Gate::authorize('delete', $guest);
+
+        DB::transaction(function () use ($request, $guest, $audit): void {
+            $guest = GuestRecord::whereKey($guest->id)->lockForUpdate()->firstOrFail();
+            Gate::authorize('delete', $guest);
+            $guest->delete();
+            $audit->record('follow_up', 'guest.deleted', $guest, $request->user());
+        });
+
+        return redirect()->route('guests.index', $request->query())
+            ->with('status', 'Guest record deleted.');
     }
 }
