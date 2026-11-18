@@ -1,0 +1,45 @@
+# Keep the build context small and free of secrets / local state.
+
+.git
+.github
+.freebuff
+.idea
+.vscode
+.gitignore
+.editorconfig
+
+# Never bake local environment files into the image.
+.env
+.env.*
+*.pem
+
+# Dependencies and generated assets (rebuilt in the image).
+node_modules
+vendor
+composer.phar
+public/build
+public/hot
+public/storage
+
+# Local runtime state.
+storage/app/private
+storage/app/public/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*.php
+*.log
+.phpunit.result.cache
+.phpunit.cache
+
+# Local-only material that must not reach production.
+u188660189_summit26.sql
+*.sql
+docker-compose.yml
+docker-compose.*.yml
+docs
+*.md
+start-local.ps1
+tests
+phpunit.xml

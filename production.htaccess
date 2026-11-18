@@ -1,0 +1,29 @@
+# Apache 2.4 example. Copy this file to public/.htaccess on production.
+# The website document root MUST be the Laravel public/ directory.
+# Requires mod_rewrite and permission to use these directives in .htaccess.
+# Enable HTTPS redirection in your hosting panel / reverse proxy.
+# PHP version and PHP-FPM handlers are configured in the hosting panel, not here.
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+RewriteEngine On
+
+# Block hidden paths, preserving certificate-validation requests.
+RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L]
+
+# Preserve headers used by Laravel authentication and CSRF protection.
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{HTTP:x-xsrf-token} .
+RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+# Remove trailing slashes on routes, leaving real directories alone.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} (.+)/$
+RewriteRule ^ %1 [L,R=301]
+
+# Serve existing public assets; route other requests through Laravel.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]
